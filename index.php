@@ -4,10 +4,15 @@ require_once 'includes/db.php';
 require_once 'includes/functions.php';
 
 $error = '';
-
+                
+// In your index.php, replace the login check section with this:
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = trim($_POST['user_id']);
     $password = $_POST['password'];
+    
+    echo "<div style='background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff;'>";
+    echo "<strong>🔍 Debug Info:</strong><br>";
+    echo "Username/ID entered: " . htmlspecialchars($user_id) . "<br>";
     
     // Find user by user_id or username
     $user = Database::query(
@@ -15,62 +20,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         [$user_id, $user_id]
     )->fetch();
     
-    if ($user && password_verify($password, $user['password_hash'])) {
+    if ($user) {
+        echo "✅ User found in database<br>";
+        echo "Database username: " . $user['username'] . "<br>";
+        echo "Database user_id: " . $user['user_id'] . "<br>";
+        echo "Hash in DB: " . substr($user['password_hash'], 0, 30) . "...<br>";
+        
+        $password_verify = password_verify($password, $user['password_hash']);
+        echo "password_verify result: " . ($password_verify ? "✅ TRUE" : "❌ FALSE") . "<br>";
+        
         // Check shift restrictions
         if (!canLogin($user['id'])) {
             $error = "Cannot login outside of shift hours. Your shift: " . 
                     date('h:i A', strtotime($user['shift_start'])) . " - " . 
                     date('h:i A', strtotime($user['shift_end']));
+        } else if ($password_verify) {
+            // Rest of your login success code...
+            echo "✅ Password verified successfully!";
         } else {
-            // Set session
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_code'] = $user['user_id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['avatar'] = $user['avatar_url'];
-            
-            // Update last login
-            Database::query(
-                "UPDATE easysalles_users SET last_login = NOW() WHERE id = ?",
-                [$user['id']]
-            );
-            
-            // Log session
-            Database::query(
-                "INSERT INTO easysalles_sessions (user_id, login_time, ip_address, user_agent) 
-                 VALUES (?, NOW(), ?, ?)",
-                [$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]
-            );
-            
-            // Check if password change is required
-            if ($user['force_password_change']) {
-                $_SESSION['force_password_change'] = true;
-                header('Location: profile/change_password.php');
-                exit();
-            }
-            
-            // Redirect based on role
-            if ($user['role'] === 'admin') {
-                header('Location: admin/index.php');
-            } else {
-                header('Location: dashboard.php');
-            }
-            exit();
+            $error = "Invalid login credentials";
         }
     } else {
+        echo "❌ User NOT found in database<br>";
         $error = "Invalid login credentials";
     }
-}
-
-// If already logged in, redirect
-if (isLoggedIn()) {
-    if (isAdmin()) {
-        header('Location: admin/index.php');
-    } else {
-        header('Location: dashboard.php');
+    
+    echo "</div>";
+    
+    if (!isset($error) && $password_verify) {
+        // Set session and redirect
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_code'] = $user['user_id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['full_name'] = $user['full_name'];
+        $_SESSION['role'] = $user['role'];
+        
+        // Update last login
+        Database::query(
+            "UPDATE easysalles_users SET last_login = NOW() WHERE id = ?",
+            [$user['id']]
+        );
+        
+        // Check if password change is required
+        if ($user['force_password_change']) {
+            $_SESSION['force_password_change'] = true;
+            header('Location: profile/change_password.php');
+            exit();
+        }
+        
+        // Redirect based on role
+        if ($user['role'] === 'admin') {
+            header('Location: admin/index.php');
+        } else {
+            header('Location: dashboard.php');
+        }
+        exit();
     }
-    exit();
 }
 ?>
 <!DOCTYPE html>
