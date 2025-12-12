@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
 
-//session_start(); // Make sure session is started
+session_start(); // Make sure session is started
 
 $error = '';
 
