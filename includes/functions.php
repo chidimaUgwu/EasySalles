@@ -30,7 +30,6 @@ function generateTransactionId() {
     
     return "TXN-{$date}-{$newNumber}";
 }
-
 // Check if user can login based on shift
 function canLogin($userId) {
     if (!SHIFT_ENFORCEMENT) return true;
@@ -42,19 +41,50 @@ function canLogin($userId) {
     $currentTime = date('H:i:s');
     $currentDay = date('N'); // 1=Monday, 7=Sunday
     
+    // Check if user has 24/7 access (00:00:00 to 23:59:00)
+    if ($user['shift_start'] == '00:00:00' && $user['shift_end'] == '23:59:00') {
+        return true;
+    }
+    
     // Check time
     if ($currentTime < $user['shift_start'] || $currentTime > $user['shift_end']) {
         return false;
     }
     
-    // Check days
-    $shiftDays = explode(',', $user['shift_days']);
-    if (!in_array($currentDay, $shiftDays)) {
-        return false;
+    // Check days - only if shift_days is not null
+    if (!empty($user['shift_days'])) {
+        $shiftDays = explode(',', $user['shift_days']);
+        if (!in_array($currentDay, $shiftDays)) {
+            return false;
+        }
     }
     
     return true;
 }
+// // Check if user can login based on shift
+// function canLogin($userId) {
+//     if (!SHIFT_ENFORCEMENT) return true;
+    
+//     $user = Database::query("SELECT shift_start, shift_end, shift_days FROM easysalles_users WHERE id = ?", [$userId])->fetch();
+    
+//     if (!$user) return false;
+    
+//     $currentTime = date('H:i:s');
+//     $currentDay = date('N'); // 1=Monday, 7=Sunday
+    
+//     // Check time
+//     if ($currentTime < $user['shift_start'] || $currentTime > $user['shift_end']) {
+//         return false;
+//     }
+    
+//     // Check days
+//     $shiftDays = explode(',', $user['shift_days']);
+//     if (!in_array($currentDay, $shiftDays)) {
+//         return false;
+//     }
+    
+//     return true;
+// }
 
 // Format currency
 function formatCurrency($amount) {
