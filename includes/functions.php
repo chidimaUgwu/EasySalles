@@ -31,10 +31,16 @@ function generateTransactionId() {
     return "TXN-{$date}-{$newNumber}";
 }
 // Check if user can login based on shift
-function canLogin($userId) {
+
+function canLogin($identifier) {
     if (!SHIFT_ENFORCEMENT) return true;
     
-    $user = Database::query("SELECT shift_start, shift_end, shift_days FROM easysalles_users WHERE id = ?", [$userId])->fetch();
+    // Check if identifier is numeric (ID) or string (user_id)
+    if (is_numeric($identifier)) {
+        $user = Database::query("SELECT shift_start, shift_end, shift_days FROM easysalles_users WHERE id = ?", [$identifier])->fetch();
+    } else {
+        $user = Database::query("SELECT shift_start, shift_end, shift_days FROM easysalles_users WHERE user_id = ?", [$identifier])->fetch();
+    }
     
     if (!$user) return false;
     
