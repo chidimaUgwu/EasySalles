@@ -1,21 +1,23 @@
 <?php
 // admin/includes/functions.php
-
-// Include the central paths configuration
-require_once dirname(dirname(dirname(__FILE__))) . '/config/paths.php';
+require_once dirname(__DIR__, 2) . '/config/paths.php';
 require_once CONFIG_PATH . 'db.php';
 
-// Check if user is logged in and is admin
 function require_admin_auth() {
-    if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
+    if (!isset($_SESSION['user_id'])) {
         header('Location: ' . LOGIN_URL);
+        exit();
+    }
+    
+    if ($_SESSION['role'] != 1) {
+        header('Location: ' . STAFF_DASHBOARD_URL);
         exit();
     }
 }
 
-// Function to get user data
 function getUserData($user_id) {
     global $pdo;
+    
     try {
         $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USERS WHERE user_id = ?");
         $stmt->execute([$user_id]);
@@ -24,6 +26,7 @@ function getUserData($user_id) {
         return null;
     }
 }
+
 
 // Function to get all users
 function getAllUsers($limit = 100) {
