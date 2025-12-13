@@ -75,29 +75,5 @@ function requireSalesperson() {
     }
 }
 
-// Check if database tables exist
-function checkEasySallesTables() {
-    try {
-        $db = Database::getInstance();
-        
-        // Check for easysalles_users table
-        $stmt = $db->query("SHOW TABLES LIKE 'easysalles_users'");
-        $usersTableExists = $stmt->rowCount() > 0;
-        
-        if (!$usersTableExists) {
-            // Try to check for any easysalles tables
-            $stmt = $db->query("SHOW TABLES LIKE 'easysalles_%'");
-            $anyTableExists = $stmt->rowCount() > 0;
-            
-            if (!$anyTableExists) {
-                return false; // No easysalles tables found
-            }
-        }
-        
-        return true; // Tables exist
-    } catch (Exception $e) {
-        error_log("Error checking tables: " . $e->getMessage());
-        return false;
-    }
-}
+
 ?>
