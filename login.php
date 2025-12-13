@@ -1,14 +1,25 @@
 <?php
 // login.php
 
-require_once __DIR__ . 'config/paths.php';
-session_start();
+require_once __DIR__ . '/config/paths.php';
+//session_start();
+
+// Redirect if already logged in
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . ($_SESSION['role'] == 1 ? 'ADMIN_PATH' : 'staff-dashboard.php'));
+    if ($_SESSION['role'] == 1) {
+        header('Location: ' . ADMIN_URL . 'index.php');
+    } else {
+        header('Location: ' . STAFF_DASHBOARD_URL);
+    }
     exit();
 }
+
+// if (isset($_SESSION['user_id'])) {
+//     header('Location: ' . ($_SESSION['role'] == 1 ? 'ADMIN_PATH' : 'staff-dashboard.php'));
+//     exit();
+// }
 
 $page_title = 'Login';
 //include 'includes/header.php';
@@ -62,14 +73,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         session_destroy();
                     }
                 }
-                
+
                 if (empty($error)) {
-                    header('Location: ' . ($user['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'));
+                    if ($user['role'] == 1) {
+                        header('Location: ' . ADMIN_URL . 'index.php');
+                    } else {
+                        header('Location: ' . STAFF_DASHBOARD_URL);
+                    }
                     exit();
                 }
-            } else {
-                $error = 'Invalid username or password.';
-            }
+                                
+            //     if (empty($error)) {
+            //         header('Location: ' . ($user['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'));
+            //         exit();
+            //     }
+            // } else {
+            //     $error = 'Invalid username or password.';
+            // }
         } catch (PDOException $e) {
             $error = 'Database error. Please try again later.';
         }
