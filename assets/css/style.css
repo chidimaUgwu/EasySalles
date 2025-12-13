@@ -232,3 +232,18 @@ body {
     .dashboard-grid, .quick-actions { grid-template-columns: 1fr; }
     .header-content { flex-direction: column; text-align: center; }
 }
+
+
+.logo-img {
+    height: 60px;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+}
+
+.logo a {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: white;
+}
