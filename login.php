@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if (empty($error)) {
-                    header('Location: ' . ($user['role'] == 1 ? 'admin-dashboard.php' : 'staff-dashboard.php'));
+                    header('Location: ' . ($user['role'] == 1 ? 'admin/dashboard.php' : 'staff-dashboard.php'));
                     exit();
                 }
             } else {
