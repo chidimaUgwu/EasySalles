@@ -1,10 +1,12 @@
 <?php
 // login.php
+
+require_once __DIR__ . 'config/paths.php';
 session_start();
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . ($_SESSION['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'));
+    header('Location: ' . ($_SESSION['role'] == 1 ? 'ADMIN_PATH' : 'staff-dashboard.php'));
     exit();
 }
 
