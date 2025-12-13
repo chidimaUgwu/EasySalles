@@ -1,0 +1,24 @@
+# public/.htaccess
+
+# Prevent directory listing
+Options -Indexes
+
+# Deny direct access to sensitive files/folders
+<Files "config">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Deny access to .php files in uploads (prevent script execution)
+<Directory "uploads">
+    <Files "*.php">
+        Order allow,deny
+        Deny from all
+    </Files>
+</Directory>
+
+# Route all requests to index.php (clean URLs later)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]

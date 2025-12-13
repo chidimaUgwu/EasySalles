@@ -1,0 +1,8 @@
+# Ignore database file
+config/db.php
+
+# Ignore all files in config folder
+config/*
+
+# Keep the folder itself (optional)
+!.gitkeep
