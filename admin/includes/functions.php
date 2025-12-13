@@ -75,6 +75,46 @@ function getDashboardStats() {
     return $stats;
 }
 
+<?php
+function getDashboardStats() {
+    global $pdo;
+    
+    $stats = [
+        'total_staff' => 0,
+        'total_products' => 0,
+        'today_sales' => 0,
+        'today_revenue' => 0
+    ];
+    
+    try {
+        // Get total staff
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE role != 'admin'");
+        $result = $stmt->fetch();
+        $stats['total_staff'] = $result['count'] ?? 0;
+        
+        // Get total products
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_PRODUCTS");
+        $result = $stmt->fetch();
+        $stats['total_products'] = $result['count'] ?? 0;
+        
+        // Get today's sales
+        $today = date('Y-m-d');
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count, SUM(final_amount) as revenue 
+                              FROM EASYSALLES_SALES 
+                              WHERE DATE(sale_date) = :today");
+        $stmt->execute(['today' => $today]);
+        $result = $stmt->fetch();
+        $stats['today_sales'] = $result['count'] ?? 0;
+        $stats['today_revenue'] = $result['revenue'] ?? 0;
+        
+    } catch (PDOException $e) {
+        // If tables don't exist yet, return default values
+        error_log("Dashboard stats error: " . $e->getMessage());
+    }
+    
+    return $stats;
+}
+
 // Function to generate employee ID
 function generateEmployeeId() {
     global $pdo;
