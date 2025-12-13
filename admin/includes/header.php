@@ -1,6 +1,7 @@
 <?php
 // admin/includes/header.php
 require_once 'functions.php';
+require_once __DIR__ . '/../config/paths.php';
 $current_user = getUserData($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
@@ -703,7 +704,7 @@ $current_user = getUserData($_SESSION['user_id']);
         <div class="sidebar-menu">
             <div class="menu-group">
                 <div class="menu-title">Main</div>
-                <a href="index.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>index.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -711,11 +712,11 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Users & Staff</div>
-                <a href="users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
-                <a href="shifts/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'shifts/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>shifts/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'shifts/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Shift Schedule</span>
                 </a>
@@ -723,15 +724,15 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Products</div>
-                <a href="products/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'products/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>products/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'products/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-box"></i>
                     <span>All Products</span>
                 </a>
-                <a href="products/categories.php" class="menu-item">
+                <a href="<?php echo ADMIN_URL; ?>products/categories.php" class="menu-item">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
                 </a>
-                <a href="inventory/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'inventory/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>inventory/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'inventory/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-warehouse"></i>
                     <span>Inventory</span>
                 </a>
@@ -739,15 +740,15 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Sales</div>
-                <a href="sales/create.php" class="menu-item">
+                <a href="<?php echo ADMIN_URL; ?>sales/create.php" class="menu-item">
                     <i class="fas fa-cash-register"></i>
                     <span>New Sale</span>
                 </a>
-                <a href="sales/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'sales/index') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>sales/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'sales/index') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Sales History</span>
                 </a>
-                <a href="sales/reports.php" class="menu-item">
+                <a href="<?php echo ADMIN_URL; ?>sales/reports.php" class="menu-item">
                     <i class="fas fa-chart-line"></i>
                     <span>Sales Reports</span>
                 </a>
@@ -755,11 +756,11 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Reports</div>
-                <a href="reports/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'reports/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo ADMIN_URL; ?>reports/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'reports/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-chart-bar"></i>
                     <span>Analytics</span>
                 </a>
-                <a href="reports/staff.php" class="menu-item">
+                <a href="<?php echo ADMIN_URL; ?>reports/staff.php" class="menu-item">
                     <i class="fas fa-user-chart"></i>
                     <span>Staff Performance</span>
                 </a>
@@ -767,7 +768,7 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Settings</div>
-                <a href="settings/index.php" class="menu-item">
+                <a href="<?php echo ADMIN_URL; ?>settings/index.php" class="menu-item">
                     <i class="fas fa-cog"></i>
                     <span>System Settings</span>
                 </a>
@@ -800,15 +801,16 @@ $current_user = getUserData($_SESSION['user_id']);
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     
+                    
                     <div class="dropdown-menu">
-                        <a href="../profile.php" class="dropdown-item">
+                        <a href="<?php echo BASE_URL; ?>profile.php" class="dropdown-item">
                             <i class="fas fa-user"></i> My Profile
                         </a>
-                        <a href="../change-password.php" class="dropdown-item">
+                        <a href="<?php echo BASE_URL; ?>change-password.php" class="dropdown-item">
                             <i class="fas fa-key"></i> Change Password
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="../logout.php" class="dropdown-item">
+                        <a href="<?php echo BASE_URL; ?>logout.php" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </div>
