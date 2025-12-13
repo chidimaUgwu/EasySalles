@@ -1,5 +1,22 @@
 <?php
-// admin/index.php
+// admin/index.php - Add at the VERY TOP
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+// Check if user is admin
+if (!isset($_SESSION['role']) || $_SESSION['role'] != 1) {
+    die("Access denied. Admin privileges required.");
+}
+
 $page_title = "Dashboard";
 require_once 'includes/header.php';
 
