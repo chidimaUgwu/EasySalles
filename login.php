@@ -2,9 +2,6 @@
 // login.php
 
 require_once __DIR__ . '/config/paths.php';
-//session_start();
-
-// Redirect if already logged in
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
@@ -16,16 +13,10 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-// if (isset($_SESSION['user_id'])) {
-//     header('Location: ' . ($_SESSION['role'] == 1 ? 'ADMIN_PATH' : 'staff-dashboard.php'));
-//     exit();
-// }
-
 $page_title = 'Login';
-//include 'includes/header.php';
 
 // Database connection
-require_once 'config/db.php';
+require_once CONFIG_PATH . 'db.php';
 
 // Handle form submission
 $error = '';
@@ -49,8 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
-                $_SESSION['avatar'] = $user['avatar_url'] ?? 'assets/images/default-avatar.png';
-                $_SESSION['first_login'] = false; // We'll check if password needs changing
+                $_SESSION['avatar'] = $user['avatar_url'] ?? BASE_URL . 'assets/images/default-avatar.png';
                 
                 // Update last login
                 $updateStmt = $pdo->prepare("UPDATE EASYSALLES_USERS SET last_login = NOW() WHERE user_id = ?");
@@ -60,10 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['role'] != 1) {
                     $shiftStmt = $pdo->prepare("
                         SELECT COUNT(*) as has_shift 
-                        FROM EASYSALLES_SHIFTS 
+                        FROM EASYSALLES_USER_SHIFTS 
                         WHERE user_id = ? 
-                        AND DATE(start_time) = CURDATE() 
-                        AND TIME(NOW()) BETWEEN TIME(start_time) AND TIME(end_time)
+                        AND assigned_date = CURDATE() 
+                        AND status = 'scheduled'
                     ");
                     $shiftStmt->execute([$user['user_id']]);
                     $shift = $shiftStmt->fetch();
@@ -82,14 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     exit();
                 }
-                                
-            //     if (empty($error)) {
-            //         header('Location: ' . ($user['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'));
-            //         exit();
-            //     }
-            // } else {
-            //     $error = 'Invalid username or password.';
-            // }
+            } else {
+                $error = 'Invalid username or password.';
+            }
         } catch (PDOException $e) {
             $error = 'Database error. Please try again later.';
         }
