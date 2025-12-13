@@ -5,7 +5,7 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 $page_title = 'Welcome';
-//include 'includes/header.php';
+include 'includes/header.php';
 ?>
 
 <div class="landing-container">
