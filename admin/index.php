@@ -1,23 +1,13 @@
 <?php
-// admin/index.php - Add at the VERY TOP
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// admin/index.php
+require_once 'includes/functions.php';
+require_admin_auth();
 
-session_start();
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
-
-// Check if user is admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] != 1) {
-    die("Access denied. Admin privileges required.");
-}
-
+// Get current user data
+$current_user = getUserData($_SESSION['user_id']);
 $page_title = "Dashboard";
+
+// Now include header (which will include the rest)
 require_once 'includes/header.php';
 
 $stats = getDashboardStats();
