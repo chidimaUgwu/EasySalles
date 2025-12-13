@@ -24,7 +24,11 @@ if (session_status() === PHP_SESSION_NONE) {
     <header class="header">
         <div class="container header-content">
             <div class="logo">
-                <h1><i class="fas fa-cash-register"></i> EasySalles</h1>
+                <a href="<?php echo isset($_SESSION['user_id']) ? ($_SESSION['role'] == 1 ? 'admin/dashboard.php' : 'staff-dashboard.php') : 'index.php'; ?>">
+                    <img src="assets/images/easysallesLogo.png" alt="EasySalles Logo" class="logo-img">
+                    <!-- fallback if logo not loaded -->
+                    <h1>EasySalles</h1>
+                </a>
             </div>
             <?php if (isset($_SESSION['user_id'])): ?>
             <nav class="nav">
@@ -47,3 +51,4 @@ if (session_status() === PHP_SESSION_NONE) {
     </header>
 
     <main class="main-content container">
+
