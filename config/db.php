@@ -1,15 +1,16 @@
 <?php
-// config/db.php - OUTSIDE web root - NEVER commit!
+// config/db.php
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'chidima.ugwu');
-define('DB_PASS', '66071288');  // Change this!
-define('DB_NAME', 'webtech_2025A_chidima_ugwu');
+$host = 'localhost';
+$dbname = 'your_database_namwebtech_2025A_chidima_ugwu'; // Change this
+$username = 'chidima.ugwu'; // Change this
+$password = '66071288'; // Change this
 
 try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Database connection failed.");
+    die("Database connection failed: " . $e->getMessage());
 }
 ?>
