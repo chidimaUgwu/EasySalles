@@ -1,15 +1,19 @@
 <?php
 // admin/includes/header.php
-require_once 'functions.php';
-require_once __DIR__ . '/../config/paths.php';
-$current_user = getUserData($_SESSION['user_id']);
+if (!isset($page_title)) {
+    $page_title = 'Admin Dashboard';
+}
+// require_once 'functions.php';
+// require_once __DIR__ . '/../config/paths.php';
+// $current_user = getUserData($_SESSION['user_id']);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EasySalles Admin | <?php echo $page_title ?? 'Dashboard'; ?></title>
+    <title>EasySalles Admin | <?php echo $page_title ?? 'Dashboard'; ?> </title>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
