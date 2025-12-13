@@ -1,4 +1,5 @@
 <?php
+//includes/functions.php
 require_once 'db.php';
 
 // Generate unique user ID
