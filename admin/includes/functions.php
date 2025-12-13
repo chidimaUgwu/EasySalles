@@ -49,42 +49,25 @@ function getDashboardStats() {
         'total_staff' => 0,
         'total_products' => 0,
         'today_sales' => 0,
-        'today_revenue' => 0,
-        'low_stock' => 0
+        'today_revenue' => 0
     ];
     
     try {
-        // Get total staff (role = 2 or != 'admin')
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE role != 1");
-        $result = $stmt->fetch();
-        $stats['total_staff'] = $result['count'] ?? 0;
+        // Total staff
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE role = 2");
+        $stats['total_staff'] = $stmt->fetch()['count'];
         
-        // Get total products - check if table exists first
-        $stmt = $pdo->query("SHOW TABLES LIKE 'EASYSALLES_PRODUCTS'");
-        if ($stmt->fetch()) {
-            $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_PRODUCTS");
-            $result = $stmt->fetch();
-            $stats['total_products'] = $result['count'] ?? 0;
-            
-            // Low stock products
-            $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_PRODUCTS WHERE current_stock <= min_stock");
-            $result = $stmt->fetch();
-            $stats['low_stock'] = $result['count'] ?? 0;
-        }
+        // Total products
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_PRODUCTS");
+        $stats['total_products'] = $stmt->fetch()['count'];
         
-        // Get today's sales - check if table exists first
-        $stmt = $pdo->query("SHOW TABLES LIKE 'EASYSALLES_SALES'");
-        if ($stmt->fetch()) {
-            $today = date('Y-m-d');
-            $stmt = $pdo->prepare("SELECT COUNT(*) as count, COALESCE(SUM(final_amount), 0) as revenue 
-                                  FROM EASYSALLES_SALES 
-                                  WHERE DATE(sale_date) = :today");
-            $stmt->execute(['today' => $today]);
-            $result = $stmt->fetch();
-            $stats['today_sales'] = $result['count'] ?? 0;
-            $stats['today_revenue'] = $result['revenue'] ?? 0;
-        }
-        
+        // Today's sales
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count, COALESCE(SUM(final_amount), 0) as revenue FROM EASYSALLES_SALES WHERE DATE(sale_date) = CURDATE()");
+        $stmt->execute();
+        $sales = $stmt->fetch();
+        $stats['today_sales'] = $sales['count'];
+        $stats['today_revenue'] = $sales['revenue'] ?: 0;
+       
     } catch (PDOException $e) {
         error_log("Dashboard stats error: " . $e->getMessage());
     }
