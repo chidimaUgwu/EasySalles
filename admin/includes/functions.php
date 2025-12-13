@@ -1,15 +1,17 @@
 <?php
 // admin/includes/functions.php
-session_start();
 
-// Redirect if not logged in or not admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
-    header('Location: ../login.php');
-    exit();
+// Include the central paths configuration
+require_once dirname(dirname(dirname(__FILE__))) . '/config/paths.php';
+require_once CONFIG_PATH . 'db.php';
+
+// Check if user is logged in and is admin
+function require_admin_auth() {
+    if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
+        header('Location: ' . LOGIN_URL);
+        exit();
+    }
 }
-
-// Database connection
-require_once '../../config/db.php';
 
 // Function to get user data
 function getUserData($user_id) {
@@ -19,7 +21,6 @@ function getUserData($user_id) {
         $stmt->execute([$user_id]);
         return $stmt->fetch();
     } catch (PDOException $e) {
-        error_log("Error getting user data: " . $e->getMessage());
         return null;
     }
 }
