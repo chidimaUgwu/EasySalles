@@ -1,5 +1,5 @@
 <?php
-//index.php
+// index.php
 require_once 'includes/config.php';
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
@@ -16,64 +16,68 @@ if (isLoggedIn()) {
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// First check if database tables exist
+if (!checkEasySallesTables()) {
+    $error = "System setup incomplete. Please contact administrator.";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     $user_id = trim($_POST['user_id']);
     $password = $_POST['password'];
     
-    // Find user by user_id or username
-    $user = Database::query(
-        "SELECT * FROM easysalles_users WHERE (user_id = ? OR username = ?) AND is_active = 1",
-        [$user_id, $user_id]
-    )->fetch();
-    
-    if ($user) {
-        // Check shift restrictions first
-        if (!canLogin($user['id'])) {
-            $error = "Cannot login outside of shift hours. Your shift: " . 
-                    date('h:i A', strtotime($user['shift_start'])) . " - " . 
-                    date('h:i A', strtotime($user['shift_end']));
-        } 
-        // Then verify password
-        else if (password_verify($password, $user['password_hash'])) {
-            // Set session variables
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_code'] = $user['user_id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['role'] = $user['role'];
-            
-            // Update last login
-            Database::query(
-                "UPDATE easysalles_users SET last_login = NOW() WHERE id = ?",
-                [$user['id']]
-            );
-            
-            // Check if password change is required
-            if ($user['force_password_change']) {
-                $_SESSION['force_password_change'] = true;
-                header('Location: profile/change_password.php');
+    try {
+        // Find user by user_id or username - check both tables starting with easysalles
+        $user = Database::query(
+            "SELECT * FROM easysalles_users WHERE (user_id = ? OR username = ?) AND is_active = 1",
+            [$user_id, $user_id]
+        )->fetch();
+        
+        if ($user) {
+            // Verify password
+            if (password_verify($password, $user['password_hash'])) {
+                // Set session variables
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_code'] = $user['user_id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['role'] = $user['role'];
+                
+                // Update last login
+                Database::query(
+                    "UPDATE easysalles_users SET last_login = NOW() WHERE id = ?",
+                    [$user['id']]
+                );
+                
+                // Check if password change is required
+                if ($user['force_password_change']) {
+                    $_SESSION['force_password_change'] = true;
+                    header('Location: profile/change_password.php');
+                    exit();
+                }
+                
+                // Log session
+                Database::query(
+                    "INSERT INTO easysalles_sessions (user_id, login_time, ip_address, user_agent) 
+                     VALUES (?, NOW(), ?, ?)",
+                    [$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]
+                );
+                
+                // Redirect based on role
+                if ($user['role'] === 'admin') {
+                    header('Location: admin/index.php');
+                } else {
+                    header('Location: dashboard.php');
+                }
                 exit();
-            }
-            
-            // Log session
-            Database::query(
-                "INSERT INTO easysalles_sessions (user_id, login_time, ip_address, user_agent) 
-                 VALUES (?, NOW(), ?, ?)",
-                [$user['id'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]
-            );
-            
-            // Redirect based on role
-            if ($user['role'] === 'admin') {
-                header('Location: admin/index.php');
             } else {
-                header('Location: dashboard.php');
+                $error = "Invalid login credentials";
             }
-            exit();
         } else {
             $error = "Invalid login credentials";
         }
-    } else {
-        $error = "Invalid login credentials";
+    } catch (Exception $e) {
+        $error = "Login error. Please try again.";
+        error_log("Login Error: " . $e->getMessage());
     }
 }
 ?>
@@ -120,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         User ID or Username
                     </label>
                     <input type="text" id="user_id" name="user_id" required 
-                           placeholder="SP-2025-001 or username"
+                           placeholder="ADMIN-001 or username"
                            value="<?php echo isset($_POST['user_id']) ? htmlspecialchars($_POST['user_id']) : ''; ?>">
                 </div>
                 
@@ -140,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="login-footer">
                     <p>Need help? Contact your administrator</p>
+                    <p>Default Admin: ADMIN-001 / password: admin123</p>
                 </div>
             </form>
         </div>
