@@ -1,9 +1,4 @@
 <?php
-// Turn on full error reporting for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Now your includes
 require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
 require_once ROOT_PATH . 'admin/includes/functions.php';
