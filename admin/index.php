@@ -1,20 +1,20 @@
 <?php
 // admin/index.php
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+require_once ROOT_PATH . 'admin/includes/functions.php';
 require_once ROOT_PATH . 'includes/auth.php';
 
-require_admin();
+require_admin();                                   // checks login + admin role
 
 $page_title = "Dashboard";
+
+// Get current user info
+$current_user = getUserData($_SESSION['user_id']);
+
 require_once ROOT_PATH . 'admin/includes/header.php';
 
-// // admin/index.php
-// require 'includes/auth.php';
-// require_login();
-
-// $page_title = "Dashboard";  // <-- MOVE THIS LINE HERE
-// require_once 'includes/header.php';
-
+// Dashboard stats
+$stats = getDashboardStats();
 $stats = getDashboardStats();
 
 // Get recent sales (mock data for now)
@@ -42,6 +42,44 @@ try {
 } catch (PDOException $e) {
     // Continue if tables don't exist
 }
+// // Recent sales and low stock
+// $recent_sales = [];
+// $low_stock_products = [];
+
+// try {
+//     $stmt = $pdo->query("SELECT s.*, u.username FROM EASYSALLES_SALES s 
+//                          LEFT JOIN EASYSALLES_USERS u ON s.staff_id = u.user_id 
+//                          ORDER BY s.sale_date DESC LIMIT 5");
+//     $recent_sales = $stmt->fetchAll();
+// } catch (PDOException $e) {}
+
+// try {
+//     $stmt = $pdo->query("SELECT p.product_name, p.current_stock 
+//                          FROM EASYSALLES_PRODUCTS p 
+//                          WHERE p.current_stock <= p.min_stock 
+//                          ORDER BY p.current_stock ASC LIMIT 5");
+//     $low_stock_products = $stmt->fetchAll();
+// } catch (PDOException $e) {}
+// ?>
+// <!-- HTML content below -->
+
+
+// // // admin/index.php
+// // require_once __DIR__ . '/../config.php';
+// // require_once ROOT_PATH . 'includes/auth.php';
+
+// // require_admin();
+
+// // $page_title = "Dashboard";
+// // require_once ROOT_PATH . 'admin/includes/header.php';
+
+// // // // admin/index.php
+// // // require 'includes/auth.php';
+// // // require_login();
+
+// // // $page_title = "Dashboard";  // <-- MOVE THIS LINE HERE
+// // // require_once 'includes/header.php';
+
 ?>
 
 <div class="page-header">
