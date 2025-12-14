@@ -1,13 +1,6 @@
 <?php
 // admin/index.php
-require_once 'includes/functions.php';
-require_admin_auth();
-
-// Get current user data
-$current_user = getUserData($_SESSION['user_id']);
 $page_title = "Dashboard";
-
-// Now include header (which will include the rest)
 require_once 'includes/header.php';
 
 $stats = getDashboardStats();
