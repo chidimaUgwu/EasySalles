@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
 }
 
 // Database connection
-require_once '../../config/db.php';
+require_once ROOT_PATH . 'config/db.php';
 
 // Function to get user data
 function getUserData($user_id) {
