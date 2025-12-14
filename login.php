@@ -9,7 +9,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $page_title = 'Login';
-include 'includes/header.php';
+//include 'includes/header.php';
 
 // Database connection
 require_once 'config/db.php';
@@ -588,4 +588,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php // include 'includes/footer.php'; ?>
