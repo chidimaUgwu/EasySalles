@@ -1,22 +1,23 @@
 <?php
 // login.php
 
-require_once __DIR__ . '/config/paths.php';
+session_start();
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] == 1) {
-        header('Location: ' . ADMIN_URL . 'index.php');
+        header('Location: admin/index.php');
     } else {
-        header('Location: ' . STAFF_DASHBOARD_URL);
+        header('Location: staff-dashboard.php');
     }
     exit();
 }
 
 $page_title = 'Login';
+// include 'includes/header.php';
 
 // Database connection
-require_once CONFIG_PATH . 'db.php';
+require_once 'config/db.php';
 
 // Handle form submission
 $error = '';
@@ -40,7 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
-                $_SESSION['avatar'] = $user['avatar_url'] ?? BASE_URL . 'assets/images/default-avatar.png';
+                $_SESSION['avatar'] = $user['avatar_url'] ?? 'assets/images/default-avatar.png';
+                $_SESSION['first_login'] = false; // We'll check if password needs changing
                 
                 // Update last login
                 $updateStmt = $pdo->prepare("UPDATE EASYSALLES_USERS SET last_login = NOW() WHERE user_id = ?");
@@ -50,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['role'] != 1) {
                     $shiftStmt = $pdo->prepare("
                         SELECT COUNT(*) as has_shift 
-                        FROM EASYSALLES_USER_SHIFTS 
+                        FROM EASYSALLES_SHIFTS 
                         WHERE user_id = ? 
-                        AND assigned_date = CURDATE() 
-                        AND status = 'scheduled'
+                        AND DATE(start_time) = CURDATE() 
+                        AND TIME(NOW()) BETWEEN TIME(start_time) AND TIME(end_time)
                     ");
                     $shiftStmt->execute([$user['user_id']]);
                     $shift = $shiftStmt->fetch();
@@ -66,12 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (empty($error)) {
                     if ($user['role'] == 1) {
-                        header('Location: ' . ADMIN_URL . 'index.php');
+                        header('Location: admin/index.php');
                     } else {
-                        header('Location: ' . STAFF_DASHBOARD_URL);
+                        header('Location: staff-dashboard.php');
                     }
                     exit();
                 }
+                                
             } else {
                 $error = 'Invalid username or password.';
             }
@@ -81,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
+    
 <style>
     /* Custom styles for login page */
     .login-container {
