@@ -716,8 +716,7 @@ $current_user = getUserData($_SESSION['user_id']);
 <div class="sidebar-menu">
         <div class="menu-group">
             <div class="menu-title">Main</div>
-            
-            <!-- <a href="index.php" class="menu-item <?php  -->
+        
                 // Improved dashboard active check
                 // Get current page info
                 $current_page = basename($_SERVER['PHP_SELF']);
