@@ -722,7 +722,8 @@ $current_user = getUserData($_SESSION['user_id']);
                 $current_uri = $_SERVER['REQUEST_URI'];
                 
                 // Check if we're on index.php directly OR at root path
-                if ($current_page == 'index.php' && strpos($current_uri, 'users/') === false && 
+                if (//$current_page == 'index.php' && strpos($current_uri, 'users/') === false && 
+                    strpos($current_uri, 'admin/') === false && strpos($current_uri, 'admin/') === false &&
                     strpos($current_uri, 'products/') === false && strpos($current_uri, 'inventory/') === false &&
                     strpos($current_uri, 'sales/') === false && strpos($current_uri, 'reports/') === false &&
                     strpos($current_uri, 'shifts/') === false) {
