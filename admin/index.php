@@ -1,6 +1,6 @@
 <?php
 // admin/index.php
-require '../includes/auth.php';
+require 'includes/auth.php';
 require_login();
 
 $page_title = "Dashboard";  // <-- MOVE THIS LINE HERE
