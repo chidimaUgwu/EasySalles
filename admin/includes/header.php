@@ -925,3 +925,5 @@ if (!isset($page_title)) {
         
         <!-- Content Area -->
         <div class="content-area">
+            
+        <div>
