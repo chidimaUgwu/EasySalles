@@ -712,8 +712,6 @@ $current_user = getUserData($_SESSION['user_id']);
             </div>
         </a>
     </div>
-    
-I JUST NOTICE THIS
 
 <div class="sidebar-menu">
         <div class="menu-group">
