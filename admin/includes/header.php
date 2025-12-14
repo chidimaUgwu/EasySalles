@@ -20,55 +20,65 @@ $current_user = getUserData($_SESSION['user_id']);
 // Get current directory information
 $current_page = basename($_SERVER['PHP_SELF']);
 $current_uri = $_SERVER['REQUEST_URI'];
-$admin_root = str_replace('/admin/includes/header.php', '', $_SERVER['SCRIPT_NAME']);
+$script_name = $_SERVER['SCRIPT_NAME'];
+
+// Debug information (you can remove this after fixing)
+error_log("Current URI: " . $current_uri);
+error_log("Script Name: " . $script_name);
+error_log("Current Page: " . $current_page);
+
+// Calculate admin root path
+$admin_root = dirname(dirname($script_name)); // Goes up two levels from /admin/includes/header.php
 
 // Function to determine active state
 function isActive($type, $value = '') {
-    global $current_page, $current_uri, $admin_root;
+    global $current_page, $current_uri;
+    
+    $admin_base_path = '/~chidima.ugwu/EasySalles/admin/';
     
     switch($type) {
         case 'dashboard':
-            // Check if we're in the admin root directory and on index.php
-            $admin_base = $admin_root . '/admin/';
-            
-            // Check if the current URI is exactly the admin dashboard
-            if ($current_page == 'index.php' && 
-                (strpos($current_uri, $admin_base . 'index.php') !== false || 
-                 $current_uri == $admin_base ||
-                 $current_uri == $admin_base . 'index.php')) {
-                return true;
-            }
-            
-            // Also check for admin root without index.php
-            $clean_uri = rtrim($current_uri, '/');
-            $clean_admin_base = rtrim($admin_base, '/');
-            if ($clean_uri == $clean_admin_base) {
-                return true;
-            }
-            
-            return false;
+            // Check if we're on the dashboard page
+            return (strpos($current_uri, $admin_base_path . 'index.php') !== false && 
+                    !strpos($current_uri, $admin_base_path . 'users/') &&
+                    !strpos($current_uri, $admin_base_path . 'products/') &&
+                    !strpos($current_uri, $admin_base_path . 'inventory/') &&
+                    !strpos($current_uri, $admin_base_path . 'sales/') &&
+                    !strpos($current_uri, $admin_base_path . 'reports/') &&
+                    !strpos($current_uri, $admin_base_path . 'shifts/') &&
+                    !strpos($current_uri, $admin_base_path . 'settings/')) || 
+                   ($current_uri == $admin_base_path);
             
         case 'directory':
-            return strpos($current_uri, $admin_root . '/admin/' . $value . '/') !== false;
+            return strpos($current_uri, $admin_base_path . $value . '/') !== false;
             
         case 'page':
-            return $current_page == $value;
+            return strpos($current_uri, '/' . $value) !== false;
             
         case 'sales_index':
-            return (strpos($current_uri, $admin_root . '/admin/sales/') !== false && 
-                    ($current_page == 'index.php' || 
-                     strpos($current_uri, 'sales/index.php') !== false));
+            return strpos($current_uri, $admin_base_path . 'sales/') !== false && 
+                   (strpos($current_uri, 'index.php') !== false || 
+                    basename($current_uri) == 'sales');
             
         default:
             return false;
     }
 }
 
-// Function to get correct URL for navigation
+// Function to get correct URL for navigation - SIMPLIFIED
 function getAdminURL($path = '') {
-    global $admin_root;
-    $base = $admin_root . '/admin/';
-    return $base . ltrim($path, '/');
+    $base_path = '/~chidima.ugwu/EasySalles/admin/';
+    
+    // If path starts with ../, remove it and go to parent
+    if (strpos($path, '../') === 0) {
+        $path = substr($path, 3);
+        $base_path = '/~chidima.ugwu/EasySalles/';
+    }
+    
+    // Clean the path to avoid double slashes
+    $clean_path = ltrim($path, '/');
+    
+    return $base_path . $clean_path;
 }
 
 // Set default page title if not set
@@ -781,15 +791,6 @@ if (!isset($page_title)) {
                 }
             });
         });
-        
-        // Debug function to check current page
-        function debugCurrentPage() {
-            console.log('Current Page:', window.location.href);
-            console.log('Pathname:', window.location.pathname);
-        }
-        
-        // Run debug on load (optional - remove in production)
-        // window.addEventListener('load', debugCurrentPage);
     </script>
 </head>
 <body>
@@ -925,5 +926,4 @@ if (!isset($page_title)) {
         
         <!-- Content Area -->
         <div class="content-area">
-            
-        <div>
+        </div>
