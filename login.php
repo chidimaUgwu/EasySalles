@@ -2,14 +2,32 @@
 // login.php
 session_start();
 
-// === FLASH MESSAGE HANDLING (for successful logout) ===
+// === FLASH MESSAGE HANDLING + PREVENT REDIRECT LOOP ===
 $flash_message = '';
 if (isset($_SESSION['flash_message'])) {
     $flash_message = $_SESSION['flash_message'];
-    unset($_SESSION['flash_message']); // Clear it after reading
-    // Optional: you can destroy the temporary session here if you want
-    // session_destroy();
+    session_unset();
+    session_destroy();
 }
+
+// Redirect ONLY if actually logged in
+if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
+    if ($_SESSION['role'] == 1) {
+        header('Location: admin/index.php');
+        exit();
+    } else {
+        header('Location: staff-dashboard.php');
+        exit();
+    }
+}
+// // === FLASH MESSAGE HANDLING (for successful logout) ===
+// $flash_message = '';
+// if (isset($_SESSION['flash_message'])) {
+//     $flash_message = $_SESSION['flash_message'];
+//     unset($_SESSION['flash_message']); // Clear it after reading
+//     // Optional: you can destroy the temporary session here if you want
+//     // session_destroy();
+// }
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
