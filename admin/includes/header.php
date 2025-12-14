@@ -6,7 +6,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Now your includes
-require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+require_once __DIR__ . '/../../config.php';          // ROOT_PATH defined here
 require_once ROOT_PATH . 'admin/includes/functions.php';
 require_once ROOT_PATH . 'includes/auth.php';
 
