@@ -724,7 +724,7 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Users & Staff</div>
-                <a href="<?php echo BASE_URL; ?>admin/users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
+                <a href="users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
