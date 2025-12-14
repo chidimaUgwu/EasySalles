@@ -1,17 +1,19 @@
+
 <?php
 // login.php
 session_start();
 
-// === FLASH MESSAGE HANDLING + PREVENT REDIRECT LOOP ===
+// === FLASH MESSAGE HANDLING ===
 $flash_message = '';
 if (isset($_SESSION['flash_message'])) {
     $flash_message = $_SESSION['flash_message'];
-    session_unset();
-    session_destroy();
+    // Clear it after reading
+    unset($_SESSION['flash_message']);
 }
 
-// Redirect ONLY if actually logged in
+// Check if already logged in (BEFORE processing form)
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
+    // User is already logged in, redirect to appropriate dashboard
     if ($_SESSION['role'] == 1) {
         header('Location: admin/index.php');
         exit();
@@ -20,27 +22,9 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         exit();
     }
 }
-// // === FLASH MESSAGE HANDLING (for successful logout) ===
-// $flash_message = '';
-// if (isset($_SESSION['flash_message'])) {
-//     $flash_message = $_SESSION['flash_message'];
-//     unset($_SESSION['flash_message']); // Clear it after reading
-//     // Optional: you can destroy the temporary session here if you want
-//     // session_destroy();
-// }
-
-// Redirect if already logged in
-// if (isset($_SESSION['user_id'])) {
-//     if ($_SESSION['role'] == 1) {
-//         header('Location: admin/index.php');
-//     } else {
-//         header('Location: staff-dashboard.php');
-//     }
-//     exit();
-// }
 
 $page_title = 'Login';
-// include 'includes/header.php';
+
 // Database connection
 require_once 'config/db.php';
 
@@ -61,12 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
            
             if ($user && password_verify($password, $user['password_hash'])) {
-                // Login successful
+                // Login successful - start new session
+                session_regenerate_id(true); // Prevent session fixation
+                
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['avatar'] = $user['avatar_url'] ?? 'assets/images/default-avatar.png';
-                $_SESSION['first_login'] = false; // We'll check if password needs changing
+                $_SESSION['first_login'] = false;
                
                 // Update last login
                 $updateStmt = $pdo->prepare("UPDATE EASYSALLES_USERS SET last_login = NOW() WHERE user_id = ?");
@@ -86,10 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    
                     if (!$shift['has_shift']) {
                         $error = 'No active shift scheduled. Please contact administrator.';
+                        // Clear session if no shift
+                        session_unset();
                         session_destroy();
                     }
                 }
+                
                 if (empty($error)) {
+                    // Successful login, redirect
                     if ($user['role'] == 1) {
                         header('Location: admin/index.php');
                     } else {
@@ -103,10 +93,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } catch (PDOException $e) {
             $error = 'Database error. Please try again later.';
+            error_log("Login error: " . $e->getMessage());
         }
     }
 }
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | EasySalles</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
    
 <style>
     /* Custom styles for login page */
@@ -432,103 +436,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 2px;
     }
 </style>
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-logo">
-            <div class="logo-icon">
-                <span>ES</span>
-            </div>
-            <h1 class="login-title">Welcome Back</h1>
-            <p class="login-subtitle">Sign in to your EasySalles account</p>
-        </div>
-       
-        <!-- SUCCESS MESSAGE (from logout) -->
-        <?php if (!empty($flash_message)): ?>
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($flash_message); ?>
-            </div>
-        <?php endif; ?>
-       
-        <!-- ERROR MESSAGE (login errors) -->
-        <?php if (!empty($error)): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-       
-        <form method="POST" action="" id="loginForm">
-            <div class="form-group">
-                <label class="form-label" for="username">
-                    <i class="fas fa-user" style="margin-right: 0.5rem;"></i>Username
-                </label>
-                <input type="text"
-                       id="username"
-                       name="username"
-                       class="form-input"
-                       placeholder="Enter your username"
-                       value="<?php echo htmlspecialchars($username); ?>"
-                       required
-                       autocomplete="username">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="logo-icon">
+                    <span>ES</span>
+                </div>
+                <h1 class="login-title">Welcome Back</h1>
+                <p class="login-subtitle">Sign in to your EasySalles account</p>
             </div>
            
-            <div class="form-group">
-                <label class="form-label" for="password">
-                    <i class="fas fa-lock" style="margin-right: 0.5rem;"></i>Password
-                </label>
-                <input type="password"
-                       id="password"
-                       name="password"
-                       class="form-input"
-                       placeholder="Enter your password"
-                       required
-                       autocomplete="current-password">
-                <button type="button" class="password-toggle" id="togglePassword">
-                    <i class="fas fa-eye"></i>
+            <!-- SUCCESS MESSAGE (from logout) -->
+            <?php if (!empty($flash_message)): ?>
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($flash_message); ?>
+                </div>
+            <?php endif; ?>
+           
+            <!-- ERROR MESSAGE (login errors) -->
+            <?php if (!empty($error)): ?>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+           
+            <form method="POST" action="" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">
+                        <i class="fas fa-user" style="margin-right: 0.5rem;"></i>Username
+                    </label>
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           class="form-input"
+                           placeholder="Enter your username"
+                           value="<?php echo htmlspecialchars($username); ?>"
+                           required
+                           autocomplete="username">
+                </div>
+               
+                <div class="form-group">
+                    <label class="form-label" for="password">
+                        <i class="fas fa-lock" style="margin-right: 0.5rem;"></i>Password
+                    </label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           class="form-input"
+                           placeholder="Enter your password"
+                           required
+                           autocomplete="current-password">
+                    <button type="button" class="password-toggle" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                    </div>
+                </div>
+               
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt" style="margin-right: 0.8rem;"></i> Sign In
                 </button>
-                <div class="password-strength">
-                    <div class="password-strength-bar" id="passwordStrengthBar"></div>
-                </div>
-            </div>
+            </form>
            
-            <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt" style="margin-right: 0.8rem;"></i> Sign In
-            </button>
-        </form>
-       
-        <div class="login-footer">
-            <a href="#" class="forgot-link" id="forgotPassword">
-                <i class="fas fa-key"></i> Forgot Password?
-            </a>
-           
-            <div class="demo-credentials">
-                <div class="demo-title">
-                    <i class="fas fa-info-circle"></i> Demo Credentials
-                </div>
-                <div class="demo-item">
-                    <strong>Admin:</strong> admin / password123
-                </div>
-                <div class="demo-item">
-                    <strong>Staff:</strong> staff1 / password123
-                </div>
-                <div class="demo-item" style="font-size: 0.85rem; color: #94a3b8;">
-                    <i class="fas fa-exclamation-triangle"></i> Change passwords in production
+            <div class="login-footer">
+                <a href="#" class="forgot-link" id="forgotPassword">
+                    <i class="fas fa-key"></i> Forgot Password?
+                </a>
+               
+                <div class="demo-credentials">
+                    <div class="demo-title">
+                        <i class="fas fa-info-circle"></i> Demo Credentials
+                    </div>
+                    <div class="demo-item">
+                        <strong>Admin:</strong> admin / password123
+                    </div>
+                    <div class="demo-item">
+                        <strong>Staff:</strong> staff1 / password123
+                    </div>
+                    <div class="demo-item" style="font-size: 0.85rem; color: #94a3b8;">
+                        <i class="fas fa-exclamation-triangle"></i> Change passwords in production
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<!-- Forgot Password Modal -->
-<div id="forgotModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2.5rem; border-radius: 20px; max-width: 400px; width: 90%; position: relative;">
-        <h3 style="margin-top: 0; color: #1E293B; font-family: 'Poppins', sans-serif;">Reset Password</h3>
-        <p style="color: #64748b; margin-bottom: 1.5rem;">Enter your email to receive password reset instructions.</p>
-        <input type="email" placeholder="Email address" style="width: 100%; padding: 1rem; border: 2px solid #E2E8F0; border-radius: 12px; margin-bottom: 1.5rem;" id="resetEmail">
-        <div style="display: flex; gap: 1rem;">
-            <button id="sendReset" style="flex: 1; background: linear-gradient(135deg, #7C3AED, #6D28D9); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Send Reset Link</button>
-            <button id="closeModal" style="background: #F1F5F9; color: #64748b; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+    
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2.5rem; border-radius: 20px; max-width: 400px; width: 90%; position: relative;">
+            <h3 style="margin-top: 0; color: #1E293B; font-family: 'Poppins', sans-serif;">Reset Password</h3>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">Enter your email to receive password reset instructions.</p>
+            <input type="email" placeholder="Email address" style="width: 100%; padding: 1rem; border: 2px solid #E2E8F0; border-radius: 12px; margin-bottom: 1.5rem;" id="resetEmail">
+            <div style="display: flex; gap: 1rem;">
+                <button id="sendReset" style="flex: 1; background: linear-gradient(135deg, #7C3AED, #6D28D9); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Send Reset Link</button>
+                <button id="closeModal" style="background: #F1F5F9; color: #64748b; border: none; padding: 1rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
+    
+    <script>
 <script>
     // Toggle password visibility
     const togglePassword = document.getElementById('togglePassword');
