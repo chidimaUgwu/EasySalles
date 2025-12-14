@@ -13,15 +13,53 @@ require_once ROOT_PATH . 'includes/auth.php';
 // Admin check
 require_admin();
 
+// Get user data
 require_once 'functions.php';
 $current_user = getUserData($_SESSION['user_id']);
+
+// Function to determine active state - MOVED BEFORE HTML OUTPUT
+function isActive($type, $value = '') {
+    $current_page = basename($_SERVER['PHP_SELF']);
+    $current_uri = $_SERVER['REQUEST_URI'];
+    
+    switch($type) {
+        case 'dashboard':
+            // Dashboard is active only when on main index.php and not in any subdirectory
+            $subdirs = ['users', 'products', 'inventory', 'sales', 'reports', 'shifts', 'settings'];
+            if ($current_page != 'index.php') return false;
+            
+            foreach ($subdirs as $dir) {
+                if (strpos($current_uri, '/' . $dir . '/') !== false) {
+                    return false;
+                }
+            }
+            return true;
+            
+        case 'directory':
+            return strpos($current_uri, '/' . $value . '/') !== false;
+            
+        case 'page':
+            return $current_page == $value;
+            
+        case 'sales_index':
+            return (strpos($current_uri, '/sales/') !== false && $current_page == 'index.php');
+            
+        default:
+            return false;
+    }
+}
+
+// Set default page title if not set
+if (!isset($page_title)) {
+    $page_title = 'Dashboard';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EasySalles Admin | <?php echo $page_title ?? 'Dashboard'; ?></title>
+    <title>EasySalles Admin | <?php echo htmlspecialchars($page_title); ?></title>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -533,7 +571,7 @@ $current_user = getUserData($_SESSION['user_id']);
             }
             
             .menu-toggle {
-                display: block;
+                display: block !important;
             }
         }
         
@@ -549,6 +587,14 @@ $current_user = getUserData($_SESSION['user_id']);
             .col-6, .col-4, .col-3 {
                 flex: 0 0 100%;
                 max-width: 100%;
+            }
+            
+            .top-header {
+                padding: 0 1rem;
+            }
+            
+            .header-left h1 {
+                font-size: 1.4rem;
             }
         }
         
@@ -636,6 +682,13 @@ $current_user = getUserData($_SESSION['user_id']);
             color: var(--primary);
         }
         
+        /* Divider for dropdown */
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 0.5rem 0;
+        }
+        
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -667,7 +720,7 @@ $current_user = getUserData($_SESSION['user_id']);
             if (window.innerWidth <= 1024) {
                 const sidebar = document.querySelector('.sidebar');
                 const toggleBtn = document.querySelector('.menu-toggle');
-                if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+                if (sidebar && toggleBtn && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
             }
@@ -696,178 +749,114 @@ $current_user = getUserData($_SESSION['user_id']);
                 callback();
             }
         }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
     </script>
 </head>
 <body>
     <!-- Sidebar -->
-<div class="sidebar">
-    <div class="sidebar-header">
-        <a href="index.php" class="logo">
-            <div class="logo-icon">
-                <i class="fas fa-store"></i>
-            </div>
-            <div class="logo-text">
-                <h2>EasySalles</h2>
-                <span>Admin Panel</span>
-            </div>
-        </a>
-    </div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="index.php" class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="logo-text">
+                    <h2>EasySalles</h2>
+                    <span>Admin Panel</span>
+                </div>
+            </a>
+        </div>
 
-<div class="sidebar-menu">
-        <div class="menu-group">
-            <div class="menu-title">Main</div>
-        
-                // Improved dashboard active check
-                // Get current page info
-                $current_page = basename($_SERVER['PHP_SELF']);
-                $current_uri = $_SERVER['REQUEST_URI'];
-                
-                // Function to determine active state
-                function isActive($type, $value = '') 
-                {
-                    global $current_page, $current_uri;
-                    
-                    switch($type) 
-                    {
-                        case 'dashboard':
-                            // Dashboard is active only when on main index.php and not in any subdirectory
-                            $subdirs = ['users', 'products', 'inventory', 'sales', 'reports', 'shifts', 'settings'];
-                            if ($current_page != 'index.php') return false;
-                            
-                            foreach ($subdirs as $dir) {
-                                if (strpos($current_uri, '/' . $dir . '/') !== false) {
-                                    return false;
-                                }
-                            }
-                            return true;
-                            
-                        case 'directory':
-                            return strpos($current_uri, '/' . $value . '/') !== false;
-                            
-                        case 'page':
-                            return $current_page == $value;
-                            
-                        case 'sales_index':
-                            return (strpos($current_uri, '/sales/') !== false && $current_page == 'index.php');
-                            
-                        default:
-                            return false;
-                    }
-                }
-                            // $current_page = basename($_SERVER['PHP_SELF']);
-                // $current_uri = $_SERVER['REQUEST_URI'];
-                
-                // // Check if we're on index.php directly OR at root path
-                // if (//$current_page == 'index.php' && strpos($current_uri, 'users/') === false && 
-                //     strpos($current_uri, 'admin/') === false && strpos($current_uri, 'admin/') === false &&
-                //     strpos($current_uri, 'products/') === false && strpos($current_uri, 'inventory/') === false &&
-                //     strpos($current_uri, 'sales/') === false && strpos($current_uri, 'reports/') === false &&
-                //     strpos($current_uri, 'shifts/') === false) {
-                //     echo 'active';
-                // }
-            ?>">
-            <a href="index.php" class="menu-item <?php echo isActive('dashboard') ? 'active' : ''; ?>">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Users & Staff</div>
-            <a href="users/index.php" class="menu-item <?php echo isActive('directory', 'users') ? 'active' : ''; ?>">
-                <i class="fas fa-users"></i>
-                <span>Manage Staff</span>
-            </a>
-            <a href="<?php echo BASE_URL; ?>admin/shifts/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'shifts/') !== false ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Shift Schedule</span>
-            </a>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Products</div>
-            <a href="<?php echo BASE_URL; ?>admin/products/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'products/') !== false ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-box"></i>
-                <span>All Products</span>
-            </a>
-            <a href="<?php echo BASE_URL; ?>admin/products/categories.php" class="menu-item <?php 
-                echo basename($_SERVER['PHP_SELF']) == 'categories.php' ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-tags"></i>
-                <span>Categories</span>
-            </a>
-            <a href="inventory/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'inventory/') !== false ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-warehouse"></i>
-                <span>Inventory</span>
-            </a>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Sales</div>
-            <a href="sales/create.php" class="menu-item <?php 
-                echo basename($_SERVER['PHP_SELF']) == 'create.php' ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-cash-register"></i>
-                <span>New Sale</span>
-            </a>
-            <a href="sales/index.php" class="menu-item <?php 
-                // Check for sales/index.php specifically
-                $uri = $_SERVER['REQUEST_URI'];
-                if (strpos($uri, 'sales/index.php') !== false || 
-                    (strpos($uri, 'sales/') !== false && basename($_SERVER['PHP_SELF']) == 'index.php')) {
-                    echo 'active';
-                }
-            ?>">
-                <i class="fas fa-receipt"></i>
-                <span>Sales History</span>
-            </a>
-            <a href="sales/reports.php" class="menu-item <?php 
-                echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-chart-line"></i>
-                <span>Sales Reports</span>
-            </a>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Reports</div>
-            <a href="reports/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'reports/') !== false ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-chart-bar"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="reports/staff.php" class="menu-item <?php 
-                echo basename($_SERVER['PHP_SELF']) == 'staff.php' ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-user-chart"></i>
-                <span>Staff Performance</span>
-            </a>
-        </div>
-        
-        <div class="menu-group">
-            <div class="menu-title">Settings</div>
-            <a href="settings/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'settings/') !== false ? 'active' : ''; 
-            ?>">
-                <i class="fas fa-cog"></i>
-                <span>System Settings</span>
-            </a>
+        <div class="sidebar-menu">
+            <div class="menu-group">
+                <div class="menu-title">Main</div>
+                <a href="index.php" class="menu-item <?php echo isActive('dashboard') ? 'active' : ''; ?>">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="menu-group">
+                <div class="menu-title">Users & Staff</div>
+                <a href="users/index.php" class="menu-item <?php echo isActive('directory', 'users') ? 'active' : ''; ?>">
+                    <i class="fas fa-users"></i>
+                    <span>Manage Staff</span>
+                </a>
+                <a href="shifts/index.php" class="menu-item <?php echo isActive('directory', 'shifts') ? 'active' : ''; ?>">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Shift Schedule</span>
+                </a>
+            </div>
+            
+            <div class="menu-group">
+                <div class="menu-title">Products</div>
+                <a href="products/index.php" class="menu-item <?php echo isActive('directory', 'products') ? 'active' : ''; ?>">
+                    <i class="fas fa-box"></i>
+                    <span>All Products</span>
+                </a>
+                <a href="products/categories.php" class="menu-item <?php echo isActive('page', 'categories.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="inventory/index.php" class="menu-item <?php echo isActive('directory', 'inventory') ? 'active' : ''; ?>">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventory</span>
+                </a>
+            </div>
+            
+            <div class="menu-group">
+                <div class="menu-title">Sales</div>
+                <a href="sales/create.php" class="menu-item <?php echo isActive('page', 'create.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-cash-register"></i>
+                    <span>New Sale</span>
+                </a>
+                <a href="sales/index.php" class="menu-item <?php echo isActive('sales_index') ? 'active' : ''; ?>">
+                    <i class="fas fa-receipt"></i>
+                    <span>Sales History</span>
+                </a>
+                <a href="sales/reports.php" class="menu-item <?php echo isActive('page', 'reports.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Sales Reports</span>
+                </a>
+            </div>
+            
+            <div class="menu-group">
+                <div class="menu-title">Reports</div>
+                <a href="reports/index.php" class="menu-item <?php echo isActive('directory', 'reports') ? 'active' : ''; ?>">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="reports/staff.php" class="menu-item <?php echo isActive('page', 'staff.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-user-chart"></i>
+                    <span>Staff Performance</span>
+                </a>
+            </div>
+            
+            <div class="menu-group">
+                <div class="menu-title">Settings</div>
+                <a href="settings/index.php" class="menu-item <?php echo isActive('directory', 'settings') ? 'active' : ''; ?>">
+                    <i class="fas fa-cog"></i>
+                    <span>System Settings</span>
+                </a>
+            </div>
         </div>
     </div>
-</div>
+    
     <!-- Main Content -->
     <div class="main-content">
         <!-- Top Header -->
         <div class="top-header">
             <div class="header-left">
-                <h1><?php echo $page_title ?? 'Dashboard'; ?></h1>
+                <h1><?php echo htmlspecialchars($page_title); ?></h1>
             </div>
             
             <div class="header-right">
@@ -878,7 +867,7 @@ $current_user = getUserData($_SESSION['user_id']);
                 <div class="dropdown">
                     <div class="user-profile" onclick="this.parentElement.classList.toggle('show')">
                         <div class="user-avatar">
-                            <?php echo strtoupper(substr($current_user['username'], 0, 1)); ?>
+                            <?php echo htmlspecialchars(strtoupper(substr($current_user['username'], 0, 1))); ?>
                         </div>
                         <div class="user-info">
                             <h4><?php echo htmlspecialchars($current_user['username']); ?></h4>
@@ -904,4 +893,4 @@ $current_user = getUserData($_SESSION['user_id']);
         </div>
         
         <!-- Content Area -->
-        <div class="content-area">    
+        <div class="content-area">
