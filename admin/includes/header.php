@@ -728,7 +728,7 @@ $current_user = getUserData($_SESSION['user_id']);
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
-                <a href="shifts/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'shifts/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo BASE_URL; ?>admin/shifts/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'shifts/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Shift Schedule</span>
                 </a>
@@ -736,11 +736,11 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Products</div>
-                <a href="products/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'products/') !== false ? 'active' : ''; ?>">
+                <a href="<?php echo BASE_URL; ?>admin/products/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'products/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-box"></i>
                     <span>All Products</span>
                 </a>
-                <a href="products/categories.php" class="menu-item">
+                <a href="<?php echo BASE_URL; ?>admin/products/categories.php" class="menu-item">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
                 </a>
