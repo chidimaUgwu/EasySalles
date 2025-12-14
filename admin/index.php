@@ -1,10 +1,19 @@
 <?php
 // admin/index.php
-require 'includes/auth.php';
-require_login();
+require_once __DIR__ . '/../config.php';
+require_once ROOT_PATH . 'includes/auth.php';
 
-$page_title = "Dashboard";  // <-- MOVE THIS LINE HERE
-require_once 'includes/header.php';
+require_admin();
+
+$page_title = "Dashboard";
+require_once ROOT_PATH . 'admin/includes/header.php';
+
+// // admin/index.php
+// require 'includes/auth.php';
+// require_login();
+
+// $page_title = "Dashboard";  // <-- MOVE THIS LINE HERE
+// require_once 'includes/header.php';
 
 $stats = getDashboardStats();
 
