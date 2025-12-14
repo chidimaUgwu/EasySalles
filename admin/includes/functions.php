@@ -1,23 +1,19 @@
 <?php
 // admin/includes/functions.php
-require_once dirname(__DIR__, 2) . '/config/paths.php';
-require_once CONFIG_PATH . 'db.php';
+session_start();
 
-function require_admin_auth() {
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: ' . LOGIN_URL);
-        exit();
-    }
-    
-    if ($_SESSION['role'] != 1) {
-        header('Location: ' . STAFF_DASHBOARD_URL);
-        exit();
-    }
+// Redirect if not logged in or not admin
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
+    header('Location: ../login.php');
+    exit();
 }
 
+// Database connection
+require_once '../../config/db.php';
+
+// Function to get user data
 function getUserData($user_id) {
     global $pdo;
-    
     try {
         $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USERS WHERE user_id = ?");
         $stmt->execute([$user_id]);
@@ -27,7 +23,6 @@ function getUserData($user_id) {
     }
 }
 
-
 // Function to get all users
 function getAllUsers($limit = 100) {
     global $pdo;
@@ -36,40 +31,45 @@ function getAllUsers($limit = 100) {
         $stmt->execute([$limit]);
         return $stmt->fetchAll();
     } catch (PDOException $e) {
-        error_log("Error getting all users: " . $e->getMessage());
         return [];
     }
 }
 
-// Function to get dashboard stats - SINGLE DEFINITION
+// Function to get dashboard stats
 function getDashboardStats() {
     global $pdo;
-    
-    $stats = [
-        'total_staff' => 0,
-        'total_products' => 0,
-        'today_sales' => 0,
-        'today_revenue' => 0
-    ];
+    $stats = [];
     
     try {
-        // Total staff
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE role = 2");
-        $stats['total_staff'] = $stmt->fetch()['count'];
+        // Total users
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM EASYSALLES_USERS WHERE role = 2");
+        $stats['total_staff'] = $stmt->fetch()['total'];
         
         // Total products
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_PRODUCTS");
-        $stats['total_products'] = $stmt->fetch()['count'];
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM EASYSALLES_PRODUCTS");
+        $stats['total_products'] = $stmt->fetch()['total'];
         
         // Today's sales
-        $stmt = $pdo->prepare("SELECT COUNT(*) as count, COALESCE(SUM(final_amount), 0) as revenue FROM EASYSALLES_SALES WHERE DATE(sale_date) = CURDATE()");
-        $stmt->execute();
-        $sales = $stmt->fetch();
-        $stats['today_sales'] = $sales['count'];
-        $stats['today_revenue'] = $sales['revenue'] ?: 0;
-       
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM EASYSALLES_SALES WHERE DATE(sale_date) = CURDATE()");
+        $stats['today_sales'] = $stmt->fetch()['total'];
+        
+        // Today's revenue
+        $stmt = $pdo->query("SELECT COALESCE(SUM(final_amount), 0) as total FROM EASYSALLES_SALES WHERE DATE(sale_date) = CURDATE()");
+        $stats['today_revenue'] = $stmt->fetch()['total'];
+        
+        // Low stock products
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM EASYSALLES_PRODUCTS WHERE current_stock <= min_stock");
+        $stats['low_stock'] = $stmt->fetch()['total'];
+        
     } catch (PDOException $e) {
-        error_log("Dashboard stats error: " . $e->getMessage());
+        // Return empty stats if tables don't exist yet
+        $stats = [
+            'total_staff' => 0,
+            'total_products' => 0,
+            'today_sales' => 0,
+            'today_revenue' => 0,
+            'low_stock' => 0
+        ];
     }
     
     return $stats;
