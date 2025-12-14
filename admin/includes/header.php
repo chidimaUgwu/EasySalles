@@ -22,11 +22,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $current_uri = $_SERVER['REQUEST_URI'];
 $script_name = $_SERVER['SCRIPT_NAME'];
 
-// Debug information (you can remove this after fixing)
-error_log("Current URI: " . $current_uri);
-error_log("Script Name: " . $script_name);
-error_log("Current Page: " . $current_page);
-
 // Calculate admin root path
 $admin_root = dirname(dirname($script_name)); // Goes up two levels from /admin/includes/header.php
 
@@ -243,6 +238,8 @@ if (!isset($page_title)) {
             flex: 1;
             margin-left: var(--sidebar-width);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         /* Top Header */
@@ -257,6 +254,7 @@ if (!isset($page_title)) {
             position: sticky;
             top: 0;
             z-index: 100;
+            flex-shrink: 0;
         }
         
         .header-left h1 {
@@ -312,6 +310,8 @@ if (!isset($page_title)) {
         /* Content Area */
         .content-area {
             padding: 2rem;
+            flex: 1;
+            overflow-y: auto;
         }
         
         /* Page Header */
@@ -926,4 +926,3 @@ if (!isset($page_title)) {
         
         <!-- Content Area -->
         <div class="content-area">
-        </div>
