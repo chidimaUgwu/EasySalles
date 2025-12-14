@@ -1,7 +1,7 @@
 <?php
 // admin/index.php
-$page_title = "Dashboard";
 require_once 'includes/header.php';
+$page_title = "Dashboard";
 
 $stats = getDashboardStats();
 
