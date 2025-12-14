@@ -4,7 +4,7 @@ session_start();
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: ' . ($_SESSION['role'] == 1 ? 'admin-dashboard.php' : 'staff-dashboard.php'));
+    header('Location: ' . ($_SESSION['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'));
     exit();
 }
 ?>
