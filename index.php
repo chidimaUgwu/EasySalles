@@ -1,6 +1,8 @@
 <?php
 // index.php - Main entry point
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
