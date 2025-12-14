@@ -2,7 +2,7 @@
 // config/db.php
 
 $host = 'localhost';
-$dbname = 'your_database_namwebtech_2025A_chidima_ugwu'; // Change this
+$dbname = 'webtech_2025A_chidima_ugwu'; // Change this
 $username = 'chidima.ugwu'; // Change this
 $password = '66071288'; // Change this
 
