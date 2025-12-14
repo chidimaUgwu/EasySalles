@@ -17,36 +17,58 @@ require_admin();
 require_once 'functions.php';
 $current_user = getUserData($_SESSION['user_id']);
 
-// Function to determine active state - MOVED BEFORE HTML OUTPUT
+// Get current directory information
+$current_page = basename($_SERVER['PHP_SELF']);
+$current_uri = $_SERVER['REQUEST_URI'];
+$admin_root = str_replace('/admin/includes/header.php', '', $_SERVER['SCRIPT_NAME']);
+
+// Function to determine active state
 function isActive($type, $value = '') {
-    $current_page = basename($_SERVER['PHP_SELF']);
-    $current_uri = $_SERVER['REQUEST_URI'];
+    global $current_page, $current_uri, $admin_root;
     
     switch($type) {
         case 'dashboard':
-            // Dashboard is active only when on main index.php and not in any subdirectory
-            $subdirs = ['users', 'products', 'inventory', 'sales', 'reports', 'shifts', 'settings'];
-            if ($current_page != 'index.php') return false;
+            // Check if we're in the admin root directory and on index.php
+            $admin_base = $admin_root . '/admin/';
             
-            foreach ($subdirs as $dir) {
-                if (strpos($current_uri, '/' . $dir . '/') !== false) {
-                    return false;
-                }
+            // Check if the current URI is exactly the admin dashboard
+            if ($current_page == 'index.php' && 
+                (strpos($current_uri, $admin_base . 'index.php') !== false || 
+                 $current_uri == $admin_base ||
+                 $current_uri == $admin_base . 'index.php')) {
+                return true;
             }
-            return true;
+            
+            // Also check for admin root without index.php
+            $clean_uri = rtrim($current_uri, '/');
+            $clean_admin_base = rtrim($admin_base, '/');
+            if ($clean_uri == $clean_admin_base) {
+                return true;
+            }
+            
+            return false;
             
         case 'directory':
-            return strpos($current_uri, '/' . $value . '/') !== false;
+            return strpos($current_uri, $admin_root . '/admin/' . $value . '/') !== false;
             
         case 'page':
             return $current_page == $value;
             
         case 'sales_index':
-            return (strpos($current_uri, '/sales/') !== false && $current_page == 'index.php');
+            return (strpos($current_uri, $admin_root . '/admin/sales/') !== false && 
+                    ($current_page == 'index.php' || 
+                     strpos($current_uri, 'sales/index.php') !== false));
             
         default:
             return false;
     }
+}
+
+// Function to get correct URL for navigation
+function getAdminURL($path = '') {
+    global $admin_root;
+    $base = $admin_root . '/admin/';
+    return $base . ltrim($path, '/');
 }
 
 // Set default page title if not set
@@ -759,13 +781,22 @@ if (!isset($page_title)) {
                 }
             });
         });
+        
+        // Debug function to check current page
+        function debugCurrentPage() {
+            console.log('Current Page:', window.location.href);
+            console.log('Pathname:', window.location.pathname);
+        }
+        
+        // Run debug on load (optional - remove in production)
+        // window.addEventListener('load', debugCurrentPage);
     </script>
 </head>
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <a href="index.php" class="logo">
+            <a href="<?php echo getAdminURL('index.php'); ?>" class="logo">
                 <div class="logo-icon">
                     <i class="fas fa-store"></i>
                 </div>
@@ -779,7 +810,7 @@ if (!isset($page_title)) {
         <div class="sidebar-menu">
             <div class="menu-group">
                 <div class="menu-title">Main</div>
-                <a href="index.php" class="menu-item <?php echo isActive('dashboard') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('index.php'); ?>" class="menu-item <?php echo isActive('dashboard') ? 'active' : ''; ?>">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
@@ -787,11 +818,11 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Users & Staff</div>
-                <a href="users/index.php" class="menu-item <?php echo isActive('directory', 'users') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('users/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'users') ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
-                <a href="shifts/index.php" class="menu-item <?php echo isActive('directory', 'shifts') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('shifts/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'shifts') ? 'active' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Shift Schedule</span>
                 </a>
@@ -799,15 +830,15 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Products</div>
-                <a href="products/index.php" class="menu-item <?php echo isActive('directory', 'products') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('products/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'products') ? 'active' : ''; ?>">
                     <i class="fas fa-box"></i>
                     <span>All Products</span>
                 </a>
-                <a href="products/categories.php" class="menu-item <?php echo isActive('page', 'categories.php') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('products/categories.php'); ?>" class="menu-item <?php echo isActive('page', 'categories.php') ? 'active' : ''; ?>">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
                 </a>
-                <a href="inventory/index.php" class="menu-item <?php echo isActive('directory', 'inventory') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('inventory/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'inventory') ? 'active' : ''; ?>">
                     <i class="fas fa-warehouse"></i>
                     <span>Inventory</span>
                 </a>
@@ -815,15 +846,15 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Sales</div>
-                <a href="sales/create.php" class="menu-item <?php echo isActive('page', 'create.php') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('sales/create.php'); ?>" class="menu-item <?php echo isActive('page', 'create.php') ? 'active' : ''; ?>">
                     <i class="fas fa-cash-register"></i>
                     <span>New Sale</span>
                 </a>
-                <a href="sales/index.php" class="menu-item <?php echo isActive('sales_index') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('sales/index.php'); ?>" class="menu-item <?php echo isActive('sales_index') ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Sales History</span>
                 </a>
-                <a href="sales/reports.php" class="menu-item <?php echo isActive('page', 'reports.php') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('sales/reports.php'); ?>" class="menu-item <?php echo isActive('page', 'reports.php') ? 'active' : ''; ?>">
                     <i class="fas fa-chart-line"></i>
                     <span>Sales Reports</span>
                 </a>
@@ -831,11 +862,11 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Reports</div>
-                <a href="reports/index.php" class="menu-item <?php echo isActive('directory', 'reports') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('reports/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'reports') ? 'active' : ''; ?>">
                     <i class="fas fa-chart-bar"></i>
                     <span>Analytics</span>
                 </a>
-                <a href="reports/staff.php" class="menu-item <?php echo isActive('page', 'staff.php') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('reports/staff.php'); ?>" class="menu-item <?php echo isActive('page', 'staff.php') ? 'active' : ''; ?>">
                     <i class="fas fa-user-chart"></i>
                     <span>Staff Performance</span>
                 </a>
@@ -843,7 +874,7 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Settings</div>
-                <a href="settings/index.php" class="menu-item <?php echo isActive('directory', 'settings') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('settings/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'settings') ? 'active' : ''; ?>">
                     <i class="fas fa-cog"></i>
                     <span>System Settings</span>
                 </a>
@@ -877,14 +908,14 @@ if (!isset($page_title)) {
                     </div>
                     
                     <div class="dropdown-menu">
-                        <a href="../profile.php" class="dropdown-item">
+                        <a href="<?php echo getAdminURL('../profile.php'); ?>" class="dropdown-item">
                             <i class="fas fa-user"></i> My Profile
                         </a>
-                        <a href="../change-password.php" class="dropdown-item">
+                        <a href="<?php echo getAdminURL('../change-password.php'); ?>" class="dropdown-item">
                             <i class="fas fa-key"></i> Change Password
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="../logout.php" class="dropdown-item">
+                        <a href="<?php echo getAdminURL('../logout.php'); ?>" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </div>
