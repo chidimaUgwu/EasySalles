@@ -30,14 +30,14 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 // }
 
 // Redirect if already logged in
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['role'] == 1) {
-        header('Location: admin/index.php');
-    } else {
-        header('Location: staff-dashboard.php');
-    }
-    exit();
-}
+// if (isset($_SESSION['user_id'])) {
+//     if ($_SESSION['role'] == 1) {
+//         header('Location: admin/index.php');
+//     } else {
+//         header('Location: staff-dashboard.php');
+//     }
+//     exit();
+// }
 
 $page_title = 'Login';
 // include 'includes/header.php';
