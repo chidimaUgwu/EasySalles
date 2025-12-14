@@ -76,17 +76,31 @@ function getDashboardStats() {
 }
 
 // Function to generate employee ID
+// Function to generate employee ID
 function generateEmployeeId() {
     global $pdo;
     try {
         $year = date('Y');
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE YEAR(created_at) = $year AND role = 2");
+        // FIX: Use proper parameter binding instead of direct variable injection
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE YEAR(created_at) = ? AND role = 2");
+        $stmt->execute([$year]);
         $count = $stmt->fetch()['count'] + 1;
         return "EMP-" . $year . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
     } catch (PDOException $e) {
         return "EMP-" . date('Y') . "-001";
     }
 }
+// function generateEmployeeId() {
+//     global $pdo;
+//     try {
+//         $year = date('Y');
+//         $stmt = $pdo->query("SELECT COUNT(*) as count FROM EASYSALLES_USERS WHERE YEAR(created_at) = $year AND role = 2");
+//         $count = $stmt->fetch()['count'] + 1;
+//         return "EMP-" . $year . "-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+//     } catch (PDOException $e) {
+//         return "EMP-" . date('Y') . "-001";
+//     }
+// }
 
 // Function to generate transaction code
 function generateTransactionCode() {
