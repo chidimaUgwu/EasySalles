@@ -716,20 +716,58 @@ $current_user = getUserData($_SESSION['user_id']);
 <div class="sidebar-menu">
         <div class="menu-group">
             <div class="menu-title">Main</div>
-            <a href="index.php" class="menu-item <?php 
+            
+            <!-- <a href="index.php" class="menu-item <?php  -->
                 // Improved dashboard active check
+                // Get current page info
                 $current_page = basename($_SERVER['PHP_SELF']);
                 $current_uri = $_SERVER['REQUEST_URI'];
                 
-                // Check if we're on index.php directly OR at root path
-                if (//$current_page == 'index.php' && strpos($current_uri, 'users/') === false && 
-                    strpos($current_uri, 'admin/') === false && strpos($current_uri, 'admin/') === false &&
-                    strpos($current_uri, 'products/') === false && strpos($current_uri, 'inventory/') === false &&
-                    strpos($current_uri, 'sales/') === false && strpos($current_uri, 'reports/') === false &&
-                    strpos($current_uri, 'shifts/') === false) {
-                    echo 'active';
+                // Function to determine active state
+                function isActive($type, $value = '') 
+                {
+                    global $current_page, $current_uri;
+                    
+                    switch($type) 
+                    {
+                        case 'dashboard':
+                            // Dashboard is active only when on main index.php and not in any subdirectory
+                            $subdirs = ['users', 'products', 'inventory', 'sales', 'reports', 'shifts', 'settings'];
+                            if ($current_page != 'index.php') return false;
+                            
+                            foreach ($subdirs as $dir) {
+                                if (strpos($current_uri, '/' . $dir . '/') !== false) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                            
+                        case 'directory':
+                            return strpos($current_uri, '/' . $value . '/') !== false;
+                            
+                        case 'page':
+                            return $current_page == $value;
+                            
+                        case 'sales_index':
+                            return (strpos($current_uri, '/sales/') !== false && $current_page == 'index.php');
+                            
+                        default:
+                            return false;
+                    }
                 }
+                            // $current_page = basename($_SERVER['PHP_SELF']);
+                // $current_uri = $_SERVER['REQUEST_URI'];
+                
+                // // Check if we're on index.php directly OR at root path
+                // if (//$current_page == 'index.php' && strpos($current_uri, 'users/') === false && 
+                //     strpos($current_uri, 'admin/') === false && strpos($current_uri, 'admin/') === false &&
+                //     strpos($current_uri, 'products/') === false && strpos($current_uri, 'inventory/') === false &&
+                //     strpos($current_uri, 'sales/') === false && strpos($current_uri, 'reports/') === false &&
+                //     strpos($current_uri, 'shifts/') === false) {
+                //     echo 'active';
+                // }
             ?>">
+            <a href="index.php" class="menu-item <?php echo isActive('dashboard') ? 'active' : ''; ?>">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
@@ -737,9 +775,7 @@ $current_user = getUserData($_SESSION['user_id']);
         
         <div class="menu-group">
             <div class="menu-title">Users & Staff</div>
-            <a href="users/index.php" class="menu-item <?php 
-                echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; 
-            ?>">
+            <a href="users/index.php" class="menu-item <?php echo isActive('directory', 'users') ? 'active' : ''; ?>">
                 <i class="fas fa-users"></i>
                 <span>Manage Staff</span>
             </a>
