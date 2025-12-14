@@ -1,5 +1,10 @@
 <?php
 // admin/includes/header.php
+// Turn on full error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once 'functions.php';
 $current_user = getUserData($_SESSION['user_id']);
 ?>
@@ -711,7 +716,7 @@ $current_user = getUserData($_SESSION['user_id']);
             
             <div class="menu-group">
                 <div class="menu-title">Users & Staff</div>
-                <a href="users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
+                <a <?php echo BASE_URL; ?>admin/users/index.php" class="menu-item <?php echo strpos($_SERVER['REQUEST_URI'], 'users/') !== false ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
