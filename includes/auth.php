@@ -1,25 +1,33 @@
 <?php
 // includes/auth.php
+require_once ROOT_PATH . 'config.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Function to require login
 function require_login() {
     if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php');
+        header('Location: ' . BASE_URL . 'index.php');
+        exit();
+    }
+}
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_start();
+// }
+
+// Function to require login
+function require_admin() {
+    require_login();
+    if ($_SESSION['role'] != 1) {
+        header('Location: ' . BASE_URL . 'staff-dashboard.php');
         exit();
     }
 }
 
 // Function to require admin role
-function require_admin() {
-    require_login();
-    if ($_SESSION['role'] != 1) {
-        header('Location: staff-dashboard.php'); // or error page
-        exit();
-    }
+// function require_admin() {
+//     require_login();
+//     if ($_SESSION['role'] != 1) {
+//         header('Location: staff-dashboard.php'); // or error page
+//         exit();
+//     }
 }
 
 // Function to check if first login (we'll add a flag later, for now mock)
