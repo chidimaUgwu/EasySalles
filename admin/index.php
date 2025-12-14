@@ -1,10 +1,16 @@
 <?php
-// admin/index.php
+// Turn on full error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Now your includes
 require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
 require_once ROOT_PATH . 'admin/includes/functions.php';
 require_once ROOT_PATH . 'includes/auth.php';
 
-require_admin();                                   // checks login + admin role
+// Admin check
+require_admin();
 
 $page_title = "Dashboard";
 
@@ -12,6 +18,20 @@ $page_title = "Dashboard";
 $current_user = getUserData($_SESSION['user_id']);
 
 require_once ROOT_PATH . 'admin/includes/header.php';
+
+// // admin/index.php
+// require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+// require_once ROOT_PATH . 'admin/includes/functions.php';
+// require_once ROOT_PATH . 'includes/auth.php';
+
+// require_admin();                                   // checks login + admin role
+
+// $page_title = "Dashboard";
+
+// // Get current user info
+// $current_user = getUserData($_SESSION['user_id']);
+
+// require_once ROOT_PATH . 'admin/includes/header.php';
 
 // Dashboard stats
 $stats = getDashboardStats();
