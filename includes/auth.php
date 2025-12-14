@@ -27,8 +27,7 @@ function require_admin() {
 //     if ($_SESSION['role'] != 1) {
 //         header('Location: staff-dashboard.php'); // or error page
 //         exit();
-//     }
-}
+//     }}
 
 // Function to check if first login (we'll add a flag later, for now mock)
 function is_first_login() {
