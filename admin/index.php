@@ -4,10 +4,18 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Now your includes
 require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+require_once __DIR__ . '/../includes/auth.php';   // Use relative path to auth.php
 require_once ROOT_PATH . 'admin/includes/functions.php';
-require_once ROOT_PATH . 'includes/auth.php';
+
+// // require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+// // require_once __DIR__ . '/../includes/auth.php';   // Use relative path to auth.php
+// // require_once ROOT_PATH . 'admin/includes/functions.php';
+
+// // Now your includes
+// require_once __DIR__ . '/../config.php';          // ROOT_PATH defined here
+// require_once ROOT_PATH . 'admin/includes/functions.php';
+// require_once ROOT_PATH . 'includes/auth.php';
 
 // Admin check
 require_admin();
