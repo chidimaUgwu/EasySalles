@@ -1,5 +1,6 @@
 <?php
 // includes/auth.php
+require 'includes/config.php';
 require_once ROOT_PATH . 'config.php';
 
 function require_login() {
