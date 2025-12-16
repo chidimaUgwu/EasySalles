@@ -14,14 +14,31 @@ try {
     $existing_categories = [];
 }
 
-// Get suppliers
+// Get suppliers for dropdown
 $suppliers = [];
 try {
-    $stmt = $pdo->query("SELECT supplier_id, supplier_name FROM EASYSALLES_SUPPLIERS WHERE status = 'active' ORDER BY supplier_name");
+    $stmt = $pdo->query("SELECT supplier_name FROM EASYSALLES_SUPPLIERS WHERE status = 'active' ORDER BY supplier_name");
     $suppliers = $stmt->fetchAll();
 } catch (PDOException $e) {
     // Suppliers table might not exist yet
 }
+
+// Get unique suppliers from existing products
+try {
+    $stmt = $pdo->query("SELECT DISTINCT supplier FROM EASYSALLES_PRODUCTS WHERE supplier IS NOT NULL AND supplier != '' ORDER BY supplier");
+    $existing_suppliers = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $existing_suppliers = [];
+}
+
+// Combine both sources of suppliers
+$all_suppliers = array_unique(
+    array_merge(
+        array_column($suppliers, 'supplier_name'),
+        array_column($existing_suppliers, 'supplier')
+    ),
+    SORT_STRING
+);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $product_name = $_POST['product_name'] ?? '';
@@ -35,7 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $min_stock = $_POST['min_stock'] ?? 10;
     $max_stock = $_POST['max_stock'] ?? 100;
     $unit_type = $_POST['unit_type'] ?? 'piece';
-    $supplier_id = $_POST['supplier_id'] ?? '';
+    $supplier = $_POST['supplier'] ?? ''; // Changed from supplier_id to supplier
+    $new_supplier = $_POST['new_supplier'] ?? ''; // Added for new supplier
     $barcode = $_POST['barcode'] ?? '';
     $image_url = $_POST['image_url'] ?? '';
     $status = $_POST['status'] ?? 'active';
@@ -64,18 +82,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $category = trim($new_category);
     }
     
+    // Use new supplier if provided
+    if (!empty($new_supplier)) {
+        $supplier = trim($new_supplier);
+        
+        // Check if supplier already exists in suppliers table
+        try {
+            $stmt = $pdo->prepare("SELECT supplier_id FROM EASYSALLES_SUPPLIERS WHERE supplier_name = ?");
+            $stmt->execute([$supplier]);
+            if (!$stmt->fetch()) {
+                // Add new supplier to suppliers table
+                $stmt = $pdo->prepare("INSERT INTO EASYSALLES_SUPPLIERS (supplier_name, status, created_at) VALUES (?, 'active', NOW())");
+                $stmt->execute([$supplier]);
+            }
+        } catch (PDOException $e) {
+            // Ignore error, supplier will still be saved in product table
+        }
+    }
+    
     if (empty($errors)) {
         try {
             // Insert product
             $stmt = $pdo->prepare("INSERT INTO EASYSALLES_PRODUCTS 
                 (product_code, product_name, description, category, unit_price, cost_price,
-                 current_stock, min_stock, max_stock, unit_type, supplier_id, barcode,
+                 current_stock, min_stock, max_stock, unit_type, supplier, barcode,
                  image_url, status, created_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             
             $result = $stmt->execute([
                 $product_code, $product_name, $description, $category, $unit_price, $cost_price,
-                $current_stock, $min_stock, $max_stock, $unit_type, $supplier_id, $barcode,
+                $current_stock, $min_stock, $max_stock, $unit_type, $supplier, $barcode,
                 $image_url, $status, $_SESSION['user_id']
             ]);
             
@@ -222,6 +258,48 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                         </div>
                     </div>
                     
+                    <!-- Supplier Selection - JUST LIKE CATEGORY -->
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">Supplier</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <select name="supplier" 
+                                            class="form-control" 
+                                            id="supplierSelect"
+                                            onchange="toggleNewSupplier()">
+                                        <option value="">Select Supplier</option>
+                                        <?php foreach ($all_suppliers as $supplier_name): ?>
+                                            <option value="<?php echo htmlspecialchars($supplier_name); ?>"
+                                                <?php echo ($_POST['supplier'] ?? '') == $supplier_name ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($supplier_name); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                        <option value="new_supplier" 
+                                            <?php echo isset($_POST['new_supplier']) ? 'selected' : ''; ?>>
+                                            + Add New Supplier
+                                        </option>
+                                    </select>
+                                </div>
+                                <small class="text-muted">
+                                    <a href="suppliers.php" target="_blank" style="color: var(--primary); text-decoration: none;">
+                                        <i class="fas fa-external-link-alt"></i> Manage Suppliers
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group" id="newSupplierGroup" style="display: none;">
+                                <label class="form-label">New Supplier Name</label>
+                                <input type="text" 
+                                       name="new_supplier" 
+                                       class="form-control" 
+                                       value="<?php echo htmlspecialchars($_POST['new_supplier'] ?? ''); ?>" 
+                                       placeholder="Enter new supplier name">
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-4">
                             <div class="form-group">
@@ -323,20 +401,6 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                         </div>
                         <div class="col-4">
                             <div class="form-group">
-                                <label class="form-label">Supplier</label>
-                                <select name="supplier_id" class="form-control">
-                                    <option value="">Select Supplier</option>
-                                    <?php foreach ($suppliers as $supplier): ?>
-                                        <option value="<?php echo $supplier['supplier_id']; ?>"
-                                            <?php echo ($_POST['supplier_id'] ?? '') == $supplier['supplier_id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($supplier['supplier_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-group">
                                 <label class="form-label">Image URL</label>
                                 <input type="url" 
                                        name="image_url" 
@@ -356,6 +420,9 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                         </button>
                         <button type="button" class="btn btn-outline" onclick="generateBarcode()">
                             <i class="fas fa-barcode"></i> Generate Barcode
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="openQuickAddSupplier()">
+                            <i class="fas fa-truck"></i> Quick Add Supplier
                         </button>
                     </div>
                 </form>
@@ -383,6 +450,7 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                 
                 <div style="display: flex; justify-content: center; gap: 1rem; margin: 1rem 0;">
                     <span class="badge badge-primary" id="previewCategory">Category</span>
+                    <span class="badge badge-info" id="previewSupplier">Supplier</span>
                     <span class="badge badge-success" id="previewStatus">Active</span>
                 </div>
                 
@@ -407,6 +475,7 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                     <li>Set realistic min/max stock levels</li>
                     <li>Regularly update cost prices for accurate profit margins</li>
                     <li>Add product images for better identification</li>
+                    <li>Assign suppliers for better inventory tracking</li>
                 </ul>
                 
                 <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-light); border-radius: 10px;">
@@ -416,6 +485,65 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
                     <div id="profitCalc">
                         <p style="margin: 0.3rem 0;">Enter price details to see profit margin</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Add Supplier Modal -->
+<div id="quickSupplierModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Quick Add Supplier</h3>
+            <span class="modal-close" onclick="closeModal('quickSupplierModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="quickSupplierFormContainer">
+                <div class="form-group">
+                    <label class="form-label">Supplier Name *</label>
+                    <input type="text" id="quickSupplierName" class="form-control" placeholder="Enter supplier name" autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Person</label>
+                    <input type="text" id="quickContactPerson" class="form-control" placeholder="Contact person name">
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" id="quickSupplierPhone" class="form-control" placeholder="Phone number">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="quickSupplierEmail" class="form-control" placeholder="Email address">
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button type="button" class="btn btn-primary" onclick="saveQuickSupplier()">
+                        <i class="fas fa-save"></i> Save Supplier
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('quickSupplierModal')">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+            <div id="quickSupplierSuccess" style="display: none; text-align: center; padding: 2rem;">
+                <div style="width: 80px; height: 80px; background: var(--success-light); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 2rem;">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3>Supplier Added Successfully!</h3>
+                <p id="addedSupplierName" class="text-muted"></p>
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn btn-primary" onclick="useNewSupplier()">
+                        <i class="fas fa-check-circle"></i> Use This Supplier
+                    </button>
+                    <button class="btn btn-outline" onclick="closeModal('quickSupplierModal')" style="margin-left: 0.5rem;">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
@@ -437,6 +565,88 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
         updatePreview();
     }
     
+    // Toggle new supplier field - NEW FUNCTION
+    function toggleNewSupplier() {
+        const select = document.getElementById('supplierSelect');
+        const newSupplierGroup = document.getElementById('newSupplierGroup');
+        
+        if (select.value === 'new_supplier') {
+            newSupplierGroup.style.display = 'block';
+            newSupplierGroup.querySelector('input').focus();
+        } else {
+            newSupplierGroup.style.display = 'none';
+        }
+        updatePreview();
+    }
+    
+    // Open quick add supplier modal
+    function openQuickAddSupplier() {
+        document.getElementById('quickSupplierModal').style.display = 'block';
+        document.getElementById('quickSupplierFormContainer').style.display = 'block';
+        document.getElementById('quickSupplierSuccess').style.display = 'none';
+        document.getElementById('quickSupplierName').focus();
+    }
+    
+    // Save quick supplier via AJAX
+    function saveQuickSupplier() {
+        const supplierName = document.getElementById('quickSupplierName').value.trim();
+        const contactPerson = document.getElementById('quickContactPerson').value.trim();
+        const phone = document.getElementById('quickSupplierPhone').value.trim();
+        const email = document.getElementById('quickSupplierEmail').value.trim();
+        
+        if (!supplierName) {
+            alert('Supplier name is required');
+            return;
+        }
+        
+        // Send AJAX request
+        fetch('add_supplier_ajax.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `supplier_name=${encodeURIComponent(supplierName)}&contact_person=${encodeURIComponent(contactPerson)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                document.getElementById('quickSupplierFormContainer').style.display = 'none';
+                document.getElementById('quickSupplierSuccess').style.display = 'block';
+                document.getElementById('addedSupplierName').textContent = supplierName;
+                
+                // Add to dropdown immediately
+                const select = document.getElementById('supplierSelect');
+                const newOption = document.createElement('option');
+                newOption.value = supplierName;
+                newOption.textContent = supplierName;
+                newOption.selected = true;
+                
+                // Insert before the "Add New Supplier" option
+                const addNewOption = select.querySelector('option[value="new_supplier"]');
+                select.insertBefore(newOption, addNewOption);
+                
+                updatePreview();
+            } else {
+                alert('Error adding supplier: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error adding supplier: ' + error);
+        });
+    }
+    
+    // Use the newly added supplier
+    function useNewSupplier() {
+        closeModal('quickSupplierModal');
+        // Supplier is already selected in dropdown
+    }
+    
+    // Close modal
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+    
     // Update product preview in real-time
     function updatePreview() {
         const form = document.forms.productForm;
@@ -448,6 +658,8 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
             'SKU: ' + (form.product_code.value || 'PROD-CODE');
         document.getElementById('previewCategory').textContent = 
             form.category.value || (form.new_category.value || 'Uncategorized');
+        document.getElementById('previewSupplier').textContent = 
+            form.supplier.value || (form.new_supplier.value || 'No Supplier');
         document.getElementById('previewStatus').textContent = 
             form.status.value || 'Active';
         document.getElementById('previewPrice').textContent = 
@@ -496,6 +708,7 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
         // Initial preview update
         updatePreview();
         toggleNewCategory();
+        toggleNewSupplier(); // Initialize supplier toggle
         
         // Auto-focus product name
         form.product_name.focus();
@@ -552,5 +765,56 @@ $default_product_code = "PROD-" . date('Ymd') . "-" . strtoupper(substr(uniqid()
         submitBtn.disabled = true;
     });
 </script>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: auto;
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 0;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        animation: modalFadeIn 0.3s;
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-close {
+        color: var(--text-light);
+        font-size: 1.8rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+    
+    .modal-close:hover {
+        color: var(--text);
+    }
+    
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 <?php require_once '../includes/footer.php'; ?>
