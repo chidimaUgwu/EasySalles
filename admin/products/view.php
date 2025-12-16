@@ -1,7 +1,7 @@
 <?php
 // admin/products/view.php
 $page_title = "Product Details";
-require_once '../../includes/header.php';
+require_once '../includes/header.php';
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     header('Location: index.php');
