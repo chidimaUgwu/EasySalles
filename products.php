@@ -904,12 +904,6 @@ foreach ($categories as $cat) {
                     <div class="product-price-section">
                         <div class="price-label">Price per <?php echo $product['unit_type']; ?></div>
                         <div class="price-value">$<?php echo number_format($product['unit_price'], 2); ?></div>
-                        
-                        <?php if ($product['cost_price']): ?>
-                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem;">
-                                Cost: $<?php echo number_format($product['cost_price'], 2); ?>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
