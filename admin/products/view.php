@@ -515,7 +515,7 @@ try {
             </div>
         </div>
 
-        <div class="main-content">
+        <div class="page-header">
             <div class="dashboard-row">
                 <div class="col-8">
                     <!-- Product Information Card -->
