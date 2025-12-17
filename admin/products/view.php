@@ -515,17 +515,21 @@ try {
             </div>
         </div>
 
-        <div class="main-content" style="padding: 1.5rem;">
-            <div class="card-header" style="padding: - 1.5rem;">
-                <h3 class="card-title">
-                    📦 Product Information
-                </h3>
-                <div class="btn-group">
-                    <span class="badge <?php echo $product['status'] == 'active' ? 'badge-success' : ($product['status'] == 'inactive' ? 'badge-warning' : 'badge-error'); ?>">
-                        <?php echo ucfirst($product['status']); ?>
-                    </span>
-                </div>
-            </div>
+        <div class="main-content">
+            <div class="dashboard-row">
+                <div class="col-8">
+                    <!-- Product Information Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                📦 Product Information
+                            </h3>
+                            <div class="btn-group">
+                                <span class="badge <?php echo $product['status'] == 'active' ? 'badge-success' : ($product['status'] == 'inactive' ? 'badge-warning' : 'badge-error'); ?>">
+                                    <?php echo ucfirst($product['status']); ?>
+                                </span>
+                            </div>
+                        </div>
                         <div style="padding: 1.5rem;">
                             <div class="product-info-grid">
                                 <div class="product-image-container">
@@ -610,8 +614,7 @@ try {
                         </div>
                     </div>
                     
-                    <div >
-                        <!-- Supplier Information -->
+                    <!-- Supplier Information -->
                     <?php if (!empty($product['supplier']) || !empty($product['supplier_name'])): ?>
                     <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
@@ -807,6 +810,7 @@ try {
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
     </div>
 
