@@ -516,7 +516,7 @@ try {
         </div>
 
         <div class="main-content" style="padding: 1.5rem;">
-            <div class="card-header">
+            <div class="card-header" style="padding: 1.5rem;">
                 <h3 class="card-title">
                     📦 Product Information
                 </h3>
