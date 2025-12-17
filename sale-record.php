@@ -19,13 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customer_email = $_POST['customer_email'] ?? '';
     $payment_method = $_POST['payment_method'] ?? 'cash';
     $notes = $_POST['notes'] ?? '';
+    $discount_amount = floatval($_POST['discount_amount'] ?? 0);
     
     // Get cart items from form
     $cart_items_json = $_POST['cart_items'] ?? '[]';
     $cart_items = json_decode($cart_items_json, true);
     
     // Calculate totals
-    $total_amount = 0;
     $subtotal = 0;
     
     if (!empty($cart_items) && is_array($cart_items)) {
@@ -35,12 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Calculate tax and total
-    $tax_rate = 0.1; // 10% tax
-    $tax_amount = $subtotal * $tax_rate;
-    $total_amount = $subtotal + $tax_amount;
+    $tax_rate = 0.01; // 1% tax as per example
+    $tax_amount = round($subtotal * $tax_rate, 2);
+    $total_amount = round($subtotal - $discount_amount + $tax_amount, 2);
     
     // Generate transaction code
-    $transaction_code = 'ES-' . date('YmdHis') . '-' . strtoupper(substr(uniqid(), -6));
+    $transaction_code = 'TXN-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     
     // Start transaction
     $pdo->beginTransaction();
@@ -49,8 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert sale record
         $sql = "INSERT INTO EASYSALLES_SALES 
                 (transaction_code, customer_name, customer_phone, customer_email, 
-                 total_amount, tax_amount, final_amount, payment_method, staff_id, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 subtotal_amount, discount_amount, tax_amount, total_amount, 
+                 payment_method, staff_id, notes, sale_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')";
         
         $stmt = $pdo->prepare($sql);
         
@@ -59,9 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $customer_name, 
             $customer_phone, 
             $customer_email,
-            $total_amount,
+            $subtotal,
+            $discount_amount,
             $tax_amount,
-            $total_amount, // final_amount = total_amount + tax_amount
+            $total_amount,
             $payment_method,
             $_SESSION['user_id'],
             $notes
@@ -118,6 +120,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $pdo->commit();
         $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
+        $show_receipt = true;
+        $receipt_data = [
+            'transaction_code' => $transaction_code,
+            'customer_name' => $customer_name,
+            'items' => $cart_items,
+            'subtotal' => $subtotal,
+            'discount' => $discount_amount,
+            'tax' => $tax_amount,
+            'total' => $total_amount,
+            'payment_method' => $payment_method,
+            'notes' => $notes
+        ];
         
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -207,7 +221,7 @@ foreach ($categories as $cat) {
     .form-section {
         background: var(--card-bg);
         border-radius: 20px;
-        padding: 2rem;
+        padding: 1.5rem;
         box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
         border: 1px solid var(--border);
     }
@@ -227,7 +241,7 @@ foreach ($categories as $cat) {
         color: var(--primary);
     }
     
-    /* Product Grid Styles from products.php */
+    /* Product Grid Styles - Compact Version */
     .category-tabs {
         display: flex;
         flex-wrap: wrap;
@@ -307,9 +321,9 @@ foreach ($categories as $cat) {
     
     .products-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 1.5rem;
-        max-height: 500px;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        max-height: 400px;
         overflow-y: auto;
         padding-right: 0.5rem;
     }
@@ -330,7 +344,7 @@ foreach ($categories as $cat) {
     
     .product-card {
         background: var(--card-bg);
-        border-radius: 15px;
+        border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         border: 1px solid var(--border);
@@ -339,10 +353,11 @@ foreach ($categories as $cat) {
         display: flex;
         flex-direction: column;
         cursor: pointer;
+        height: 280px; /* Fixed height for compact design */
     }
     
     .product-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-3px);
         box-shadow: 0 10px 25px rgba(124, 58, 237, 0.15);
         border-color: var(--primary);
     }
@@ -353,7 +368,7 @@ foreach ($categories as $cat) {
     }
     
     .product-image-container {
-        height: 150px;
+        height: 100px;
         overflow: hidden;
         position: relative;
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
@@ -376,93 +391,94 @@ foreach ($categories as $cat) {
         justify-content: center;
         height: 100%;
         color: var(--primary);
-        font-size: 3rem;
+        font-size: 2rem;
     }
     
     .product-header {
-        padding: 1rem 1rem 0.5rem;
+        padding: 0.75rem 0.75rem 0.5rem;
     }
     
     .product-code {
         font-family: 'Poppins', sans-serif;
         font-weight: 600;
         color: var(--text);
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
-        padding: 0.2rem 0.6rem;
-        border-radius: 15px;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
         display: inline-block;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
     }
     
     .product-name {
         font-family: 'Poppins', sans-serif;
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 600;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
         color: var(--text);
         line-height: 1.3;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        height: 2.5em;
     }
     
     .category-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
-        padding: 0.3rem 0.8rem;
-        border-radius: 15px;
-        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
         font-weight: 600;
         margin-bottom: 0.5rem;
         width: fit-content;
     }
     
     .product-details {
-        padding: 0 1rem 1rem;
+        padding: 0 0.75rem;
         flex-grow: 1;
     }
     
     .detail-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 1rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
     }
     
     .detail-item {
         text-align: center;
-        padding: 0.5rem;
+        padding: 0.4rem;
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
-        border-radius: 10px;
+        border-radius: 8px;
         transition: all 0.3s ease;
     }
     
     .detail-label {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         color: #64748b;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.1rem;
     }
     
     .detail-value {
         font-weight: 600;
         color: var(--text);
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
     
     .stock-indicator {
-        height: 6px;
+        height: 4px;
         background: var(--border);
-        border-radius: 3px;
-        margin: 0.75rem 0;
+        border-radius: 2px;
+        margin: 0.5rem 0;
         overflow: hidden;
     }
     
     .stock-level {
         height: 100%;
-        border-radius: 3px;
+        border-radius: 2px;
         transition: all 0.3s ease;
     }
     
@@ -473,35 +489,35 @@ foreach ($categories as $cat) {
     .stock-info {
         display: flex;
         justify-content: space-between;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         color: #64748b;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
     }
     
     .product-price-section {
-        padding: 1rem;
-        border-top: 2px solid var(--border);
+        padding: 0.75rem;
+        border-top: 1px solid var(--border);
         text-align: center;
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.03), rgba(236, 72, 153, 0.01));
     }
     
     .price-label {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         color: #64748b;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.2rem;
     }
     
     .price-value {
         font-family: 'Poppins', sans-serif;
-        font-size: 1.5rem;
+        font-size: 1.2rem;
         font-weight: 700;
         color: var(--primary);
     }
     
     .add-to-cart-btn {
         width: 100%;
-        padding: 0.75rem;
-        border-radius: 10px;
+        padding: 0.5rem;
+        border-radius: 8px;
         background: linear-gradient(135deg, var(--primary), var(--secondary));
         color: white;
         border: none;
@@ -511,13 +527,13 @@ foreach ($categories as $cat) {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-        margin-top: 0.75rem;
+        gap: 0.3rem;
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
     }
     
     .add-to-cart-btn:hover {
-        transform: translateY(-3px);
+        transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
     }
     
@@ -535,7 +551,7 @@ foreach ($categories as $cat) {
     }
     
     .empty-state i {
-        font-size: 3rem;
+        font-size: 2rem;
         margin-bottom: 1rem;
         color: var(--border);
     }
@@ -544,7 +560,7 @@ foreach ($categories as $cat) {
     .cart-container {
         background: var(--card-bg);
         border-radius: 20px;
-        padding: 2rem;
+        padding: 1.5rem;
         box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
         border: 1px solid var(--border);
         position: sticky;
@@ -553,11 +569,32 @@ foreach ($categories as $cat) {
         overflow-y: auto;
     }
     
+    .cart-items-container {
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .cart-items-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .cart-items-container::-webkit-scrollbar-track {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    
+    .cart-items-container::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 3px;
+    }
+    
     .cart-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem 0;
+        padding: 0.75rem 0;
         border-bottom: 1px solid var(--border);
     }
     
@@ -568,31 +605,31 @@ foreach ($categories as $cat) {
     .cart-item-info h4 {
         font-weight: 600;
         margin-bottom: 0.25rem;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
     
     .cart-item-price {
         color: #64748b;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     
     .cart-item-controls {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.3rem;
     }
     
     .quantity-btn {
-        width: 28px;
-        height: 28px;
-        border-radius: 7px;
-        border: 2px solid var(--border);
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+        border: 1px solid var(--border);
         background: var(--card-bg);
         color: var(--text);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
     
     .quantity-btn:hover {
@@ -602,20 +639,20 @@ foreach ($categories as $cat) {
     }
     
     .quantity-display {
-        min-width: 35px;
+        min-width: 30px;
         text-align: center;
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
     
     .remove-btn {
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
         color: #EF4444;
         border: none;
-        padding: 0.4rem 0.8rem;
-        border-radius: 7px;
+        padding: 0.3rem 0.6rem;
+        border-radius: 5px;
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         transition: all 0.3s ease;
     }
     
@@ -624,51 +661,266 @@ foreach ($categories as $cat) {
         color: white;
     }
     
-    .cart-total {
+    /* Order Summary Styles */
+    .order-summary {
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.03), rgba(236, 72, 153, 0.01));
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        border: 1px solid var(--border);
+    }
+    
+    .summary-title {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text);
+        text-align: center;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        padding: 0.3rem 0;
+        border-bottom: 1px dashed var(--border);
+    }
+    
+    .summary-row.total {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary);
+        border-bottom: 2px solid var(--primary);
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+    }
+    
+    .summary-label {
+        color: #64748b;
+    }
+    
+    .summary-value {
+        font-weight: 600;
+        color: var(--text);
+    }
+    
+    .discount-input {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+    }
+    
+    .discount-input input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        text-align: right;
+    }
+    
+    /* Receipt Preview Styles */
+    .receipt-preview {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border: 2px solid var(--border);
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        border-bottom: 1px dashed #000;
+        padding-bottom: 0.5rem;
+    }
+    
+    .receipt-title {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .receipt-transaction {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .receipt-items {
+        margin-bottom: 1rem;
+    }
+    
+    .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .receipt-totals {
+        border-top: 1px dashed #000;
+        padding-top: 0.5rem;
+    }
+    
+    .receipt-footer {
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-complete {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-complete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-clear {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+        color: #EF4444;
+        border: 2px solid #EF4444;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-clear:hover {
+        background: linear-gradient(135deg, #EF4444, #DC2626);
+        color: white;
+    }
+    
+    /* Quick Sale Section */
+    .quick-sale {
         margin-top: 1.5rem;
         padding-top: 1.5rem;
         border-top: 2px solid var(--border);
     }
     
-    .total-row {
+    .quick-sale-input {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
     }
     
-    .grand-total {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: var(--primary);
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 2px solid var(--border);
+    .quick-sale-input input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
     }
     
-    .submit-btn {
-        width: 100%;
-        padding: 1rem;
+    .btn-quick-add {
         background: linear-gradient(135deg, var(--primary), var(--secondary));
         color: white;
         border: none;
-        border-radius: 12px;
-        font-size: 1.1rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: 1.5rem;
     }
     
-    .submit-btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(124, 58, 237, 0.3);
+    .btn-quick-add:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
     }
     
-    .submit-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        background: var(--card-bg);
+        color: var(--text);
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .payment-methods {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .payment-method {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+    }
+    
+    .payment-method:hover {
+        border-color: var(--primary);
+    }
+    
+    .payment-method.active {
+        border-color: var(--primary);
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+    }
+    
+    .payment-method i {
+        font-size: 1rem;
+        color: var(--primary);
+    }
+    
+    .empty-cart {
+        text-align: center;
+        padding: 1rem;
+        color: #64748b;
+    }
+    
+    .empty-cart i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--border);
     }
     
     .alert {
@@ -690,98 +942,6 @@ foreach ($categories as $cat) {
         border-left-color: #EF4444;
     }
     
-    .empty-cart {
-        text-align: center;
-        padding: 2rem 1rem;
-        color: #64748b;
-    }
-    
-    .empty-cart i {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        color: var(--border);
-    }
-    
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--text);
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 0.875rem 1rem;
-        border: 2px solid var(--border);
-        border-radius: 12px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        background: var(--card-bg);
-        color: var(--text);
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-    }
-    
-    .payment-methods {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-        margin-top: 1rem;
-    }
-    
-    .payment-method {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border: 2px solid var(--border);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .payment-method:hover {
-        border-color: var(--primary);
-    }
-    
-    .payment-method.active {
-        border-color: var(--primary);
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
-    }
-    
-    .payment-method i {
-        font-size: 1.25rem;
-        color: var(--primary);
-    }
-    
-    .cart-items-container {
-        max-height: 300px;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-    
-    .cart-items-container::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    .cart-items-container::-webkit-scrollbar-track {
-        background: var(--border);
-        border-radius: 3px;
-    }
-    
-    .cart-items-container::-webkit-scrollbar-thumb {
-        background: var(--primary);
-        border-radius: 3px;
-    }
-    
     .product-meta {
         display: flex;
         justify-content: space-between;
@@ -792,15 +952,38 @@ foreach ($categories as $cat) {
     }
     
     .product-status {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 10px;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 8px;
         font-weight: 500;
     }
     
     .status-active {
         background: rgba(16, 185, 129, 0.1);
         color: #10B981;
+    }
+    
+    /* Print Receipt Button */
+    .print-receipt-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .print-receipt-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
     }
 </style>
 
@@ -889,6 +1072,7 @@ foreach ($categories as $cat) {
                                  data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
                                  data-price="<?php echo $product['unit_price']; ?>"
                                  data-stock="<?php echo $product['current_stock']; ?>"
+                                 data-code="<?php echo htmlspecialchars($product['product_code']); ?>"
                                  onclick="addToCart(<?php echo $product['product_id']; ?>)">
                                 
                                 <!-- Product Image -->
@@ -910,7 +1094,7 @@ foreach ($categories as $cat) {
                                     <div class="product-meta">
                                         <span class="product-code"><?php echo htmlspecialchars($product['product_code']); ?></span>
                                         <span class="product-status status-active">
-                                            <i class="fas fa-circle"></i> In Stock
+                                            <i class="fas fa-circle"></i> Stock: <?php echo $product['current_stock']; ?>
                                         </span>
                                     </div>
                                     
@@ -932,19 +1116,8 @@ foreach ($categories as $cat) {
                                         <div class="detail-item">
                                             <div class="detail-label">Current Stock</div>
                                             <div class="detail-value">
-                                                <?php echo $product['current_stock']; ?> 
-                                                <small style="font-size: 0.7rem; color: #64748b;"><?php echo $product['unit_type']; ?></small>
+                                                <?php echo $product['current_stock']; ?>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="detail-item">
-                                            <div class="detail-label">Min Stock</div>
-                                            <div class="detail-value"><?php echo $product['min_stock']; ?></div>
-                                        </div>
-                                        
-                                        <div class="detail-item">
-                                            <div class="detail-label">Max Stock</div>
-                                            <div class="detail-value"><?php echo $product['max_stock']; ?></div>
                                         </div>
                                         
                                         <div class="detail-item">
@@ -981,7 +1154,7 @@ foreach ($categories as $cat) {
             </div>
             
             <!-- Customer Information -->
-            <div class="form-section" style="margin-top: 2rem;">
+            <div class="form-section" style="margin-top: 1.5rem;">
                 <div class="section-title">
                     <i class="fas fa-user"></i>
                     <span>Customer Information</span>
@@ -1007,7 +1180,7 @@ foreach ($categories as $cat) {
             </div>
             
             <!-- Payment Method -->
-            <div class="form-section" style="margin-top: 2rem;">
+            <div class="form-section" style="margin-top: 1.5rem;">
                 <div class="section-title">
                     <i class="fas fa-credit-card"></i>
                     <span>Payment Method</span>
@@ -1038,28 +1211,22 @@ foreach ($categories as $cat) {
                         <span>Credit</span>
                     </label>
                 </div>
-                
-                <div class="form-group" style="margin-top: 1.5rem;">
-                    <label class="form-label">Notes (Optional)</label>
-                    <textarea id="saleNotes" class="form-control" rows="3" 
-                              placeholder="Add any notes about this sale..."></textarea>
-                </div>
             </div>
         </div>
         
-        <!-- Right Column: Cart -->
+        <!-- Right Column: Cart & Order Summary -->
         <div class="cart-container">
             <div class="section-title">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Shopping Cart</span>
-                <span id="cartCount" style="margin-left: auto; font-size: 0.9rem; color: #64748b;">(0 items)</span>
+                <span id="cartCount" style="margin-left: auto; font-size: 0.8rem; color: #64748b;">(0 items)</span>
             </div>
             
             <div id="cartItems">
                 <div class="empty-cart">
                     <i class="fas fa-shopping-cart"></i>
                     <p>Your cart is empty</p>
-                    <p class="text-muted" style="font-size: 0.9rem;">Select products from the list</p>
+                    <p class="text-muted" style="font-size: 0.8rem;">Select products from the list</p>
                 </div>
             </div>
             
@@ -1068,39 +1235,99 @@ foreach ($categories as $cat) {
                     <!-- Cart items will be inserted here by JavaScript -->
                 </div>
                 
-                <div class="cart-total">
-                    <div class="total-row">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                <!-- Order Summary -->
+                <div class="order-summary">
+                    <div class="summary-title">Order Summary</div>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Subtotal:</span>
+                        <span class="summary-value" id="subtotal">$0.00</span>
                     </div>
                     
-                    <div class="total-row">
-                        <span>Discount:</span>
-                        <span id="discount">$0.00</span>
+                    <div class="summary-row">
+                        <span class="summary-label">Discount:</span>
+                        <div class="discount-input">
+                            <input type="number" id="discountAmount" value="0" min="0" step="0.01" 
+                                   onchange="updateTotals()" placeholder="0.00">
+                            <span>$</span>
+                        </div>
                     </div>
                     
-                    <div class="total-row">
-                        <span>Tax (10%):</span>
-                        <span id="tax">$0.00</span>
+                    <div class="summary-row">
+                        <span class="summary-label">Tax:</span>
+                        <span class="summary-value" id="tax">$0.00</span>
                     </div>
                     
-                    <div class="grand-total">
-                        <span>Total:</span>
-                        <span id="grandTotal">$0.00</span>
+                    <div class="summary-row total">
+                        <span class="summary-label">Total:</span>
+                        <span class="summary-value" id="grandTotal">$0.00</span>
                     </div>
                 </div>
                 
-                <form method="POST" id="saleForm">
+                <!-- Notes -->
+                <div class="form-group">
+                    <label class="form-label">Notes (Optional)</label>
+                    <textarea id="saleNotes" class="form-control" rows="2" 
+                              placeholder="Add any notes about this sale..."></textarea>
+                </div>
+                
+                <!-- Receipt Preview -->
+                <div class="receipt-preview" id="receiptPreview" style="display: none;">
+                    <div class="receipt-header">
+                        <div class="receipt-title">EASYSALLES STORE</div>
+                        <div class="receipt-transaction" id="receiptTransaction">Transaction: TXN-20251217-0DCE9E</div>
+                    </div>
+                    <div class="receipt-items" id="receiptItems">
+                        <!-- Items will be added here -->
+                    </div>
+                    <div class="receipt-totals" id="receiptTotals">
+                        <!-- Totals will be added here -->
+                    </div>
+                    <div class="receipt-footer">
+                        Thank you for your purchase!
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="button" class="btn-complete" id="completeSaleBtn">
+                        <i class="fas fa-check"></i> Complete Sale
+                    </button>
+                    
+                    <button type="button" class="btn-clear" onclick="clearCart()">
+                        <i class="fas fa-trash"></i> Clear Cart
+                    </button>
+                </div>
+                
+                <!-- Print Receipt Button -->
+                <button type="button" class="print-receipt-btn" id="printReceiptBtn" style="display: none;">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+                
+                <!-- Quick Sale Section -->
+                <div class="quick-sale">
+                    <div class="section-title" style="font-size: 1rem;">
+                        <i class="fas fa-bolt"></i>
+                        <span>Quick Sale</span>
+                    </div>
+                    
+                    <div class="quick-sale-input">
+                        <input type="text" id="quickProductCode" placeholder="Enter product code or name">
+                        <button type="button" class="btn-quick-add" onclick="quickAddToCart()">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Hidden Form -->
+                <form method="POST" id="saleForm" style="display: none;">
                     <input type="hidden" name="customer_name" id="formCustomerName">
                     <input type="hidden" name="customer_phone" id="formCustomerPhone">
                     <input type="hidden" name="customer_email" id="formCustomerEmail">
                     <input type="hidden" name="payment_method" id="formPaymentMethod" value="cash">
                     <input type="hidden" name="notes" id="formNotes">
+                    <input type="hidden" name="discount_amount" id="formDiscount">
                     <input type="hidden" name="cart_items" id="formCartItems">
-                    
-                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
-                        <i class="fas fa-check"></i> Complete Sale
-                    </button>
                 </form>
             </div>
         </div>
@@ -1110,6 +1337,7 @@ foreach ($categories as $cat) {
 <script>
     let cart = [];
     let products = [];
+    let transactionCode = 'TXN-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
     // Load products from server
     document.addEventListener('DOMContentLoaded', function() {
@@ -1120,7 +1348,8 @@ foreach ($categories as $cat) {
                 id: parseInt(card.dataset.id),
                 name: card.dataset.name,
                 price: parseFloat(card.dataset.price),
-                stock: parseInt(card.dataset.stock)
+                stock: parseInt(card.dataset.stock),
+                code: card.dataset.code
             });
         });
         
@@ -1129,7 +1358,7 @@ foreach ($categories as $cat) {
             const searchTerm = e.target.value.toLowerCase();
             productCards.forEach(card => {
                 const productName = card.dataset.name.toLowerCase();
-                const productCode = card.querySelector('.product-code').textContent.toLowerCase();
+                const productCode = card.dataset.code.toLowerCase();
                 const productDesc = card.querySelector('.product-description')?.textContent.toLowerCase() || '';
                 
                 if (productName.includes(searchTerm) || 
@@ -1160,6 +1389,7 @@ foreach ($categories as $cat) {
         document.getElementById('customerPhone').addEventListener('input', updateFormValues);
         document.getElementById('customerEmail').addEventListener('input', updateFormValues);
         document.getElementById('saleNotes').addEventListener('input', updateFormValues);
+        document.getElementById('discountAmount').addEventListener('input', updateTotals);
         
         // Load cart from localStorage if exists
         const savedCart = localStorage.getItem('sale_cart');
@@ -1168,14 +1398,37 @@ foreach ($categories as $cat) {
             updateCartDisplay();
         }
         
-        // Check for add_product parameter in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const addProductId = urlParams.get('add_product');
-        if (addProductId) {
-            addToCart(parseInt(addProductId));
-            // Remove parameter from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        // Complete sale button
+        document.getElementById('completeSaleBtn').addEventListener('click', function() {
+            if (cart.length === 0) {
+                alert('Please add items to cart before completing sale.');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to complete this sale?')) {
+                return;
+            }
+            
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            this.disabled = true;
+            
+            // Update form values and submit
+            updateFormValues();
+            document.getElementById('saleForm').submit();
+        });
+        
+        // Print receipt button
+        document.getElementById('printReceiptBtn').addEventListener('click', function() {
+            printReceipt();
+        });
+        
+        // Quick sale enter key
+        document.getElementById('quickProductCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                quickAddToCart();
+            }
+        });
     });
     
     // Add product to cart
@@ -1202,6 +1455,7 @@ foreach ($categories as $cat) {
                 cart.push({
                     product_id: productId,
                     name: product.name,
+                    code: product.code,
                     unit_price: product.price,
                     quantity: 1
                 });
@@ -1220,13 +1474,41 @@ foreach ($categories as $cat) {
         
         updateCartDisplay();
         saveCartToStorage();
+        updateReceiptPreview();
     };
+    
+    // Quick add to cart by product code
+    function quickAddToCart() {
+        const input = document.getElementById('quickProductCode');
+        const searchTerm = input.value.trim().toLowerCase();
+        
+        if (!searchTerm) {
+            alert('Please enter a product code or name');
+            return;
+        }
+        
+        // Find product by code or name
+        const product = products.find(p => 
+            p.code.toLowerCase() === searchTerm || 
+            p.name.toLowerCase().includes(searchTerm)
+        );
+        
+        if (!product) {
+            alert('Product not found!');
+            return;
+        }
+        
+        addToCart(product.id);
+        input.value = '';
+        input.focus();
+    }
     
     // Remove item from cart
     function removeFromCart(productId) {
         cart = cart.filter(item => item.product_id !== productId);
         updateCartDisplay();
         saveCartToStorage();
+        updateReceiptPreview();
     }
     
     // Update quantity in cart
@@ -1251,34 +1533,35 @@ foreach ($categories as $cat) {
         item.quantity = newQuantity;
         updateCartDisplay();
         saveCartToStorage();
+        updateReceiptPreview();
     }
     
     function updateCartDisplay() {
         const cartItemsList = document.getElementById('cartItemsList');
         const emptyCart = document.getElementById('cartItems');
         const cartContent = document.getElementById('cartContent');
-        const submitBtn = document.getElementById('submitBtn');
+        const completeBtn = document.getElementById('completeSaleBtn');
         const cartCount = document.getElementById('cartCount');
         
         if (cart.length === 0) {
             emptyCart.style.display = 'block';
             cartContent.style.display = 'none';
-            submitBtn.disabled = true;
+            completeBtn.disabled = true;
             cartCount.textContent = '(0 items)';
             return;
         }
         
         emptyCart.style.display = 'none';
         cartContent.style.display = 'block';
-        submitBtn.disabled = false;
-        cartCount.textContent = `(${cart.reduce((total, item) => total + item.quantity, 0)} items)`;
+        completeBtn.disabled = false;
+        
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        cartCount.textContent = `(${totalItems} items)`;
         
         let html = '';
-        let subtotal = 0;
         
         cart.forEach(item => {
             const itemTotal = item.unit_price * item.quantity;
-            subtotal += itemTotal;
             
             html += `
                 <div class="cart-item" data-item-id="${item.product_id}">
@@ -1299,14 +1582,24 @@ foreach ($categories as $cat) {
         });
         
         cartItemsList.innerHTML = html;
+        updateTotals();
+    }
+    
+    function updateTotals() {
+        if (cart.length === 0) {
+            document.getElementById('subtotal').textContent = '$0.00';
+            document.getElementById('tax').textContent = '$0.00';
+            document.getElementById('grandTotal').textContent = '$0.00';
+            return;
+        }
         
-        // Calculate totals
-        const discount = 0; // Can be added later
-        const tax = subtotal * 0.1; // 10% tax
+        // Calculate subtotal
+        const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        const tax = (subtotal - discount) * 0.01; // 1% tax
         const grandTotal = subtotal - discount + tax;
         
         document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('discount').textContent = `$${discount.toFixed(2)}`;
         document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
         document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
         
@@ -1319,47 +1612,121 @@ foreach ($categories as $cat) {
         document.getElementById('formCustomerPhone').value = document.getElementById('customerPhone').value;
         document.getElementById('formCustomerEmail').value = document.getElementById('customerEmail').value;
         document.getElementById('formNotes').value = document.getElementById('saleNotes').value;
+        document.getElementById('formDiscount').value = parseFloat(document.getElementById('discountAmount').value) || 0;
         
         // Update cart items in form
         document.getElementById('formCartItems').value = JSON.stringify(cart);
+    }
+    
+    function updateReceiptPreview() {
+        if (cart.length === 0) {
+            document.getElementById('receiptPreview').style.display = 'none';
+            document.getElementById('printReceiptBtn').style.display = 'none';
+            return;
+        }
+        
+        document.getElementById('receiptPreview').style.display = 'block';
+        document.getElementById('printReceiptBtn').style.display = 'block';
+        
+        // Update transaction code
+        document.getElementById('receiptTransaction').textContent = `Transaction: ${transactionCode}`;
+        
+        // Update receipt items
+        const receiptItems = document.getElementById('receiptItems');
+        let itemsHtml = '';
+        
+        cart.forEach(item => {
+            const itemTotal = item.unit_price * item.quantity;
+            itemsHtml += `
+                <div class="receipt-item">
+                    <span>${item.name} x${item.quantity}</span>
+                    <span>$${itemTotal.toFixed(2)}</span>
+                </div>
+            `;
+        });
+        
+        receiptItems.innerHTML = itemsHtml;
+        
+        // Update receipt totals
+        const receiptTotals = document.getElementById('receiptTotals');
+        const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        const tax = (subtotal - discount) * 0.01;
+        const grandTotal = subtotal - discount + tax;
+        
+        receiptTotals.innerHTML = `
+            <div class="receipt-item">
+                <span>Subtotal:</span>
+                <span>$${subtotal.toFixed(2)}</span>
+            </div>
+            <div class="receipt-item">
+                <span>Discount:</span>
+                <span>$${discount.toFixed(2)}</span>
+            </div>
+            <div class="receipt-item">
+                <span>Tax:</span>
+                <span>$${tax.toFixed(2)}</span>
+            </div>
+            <div class="receipt-item" style="font-weight: bold; border-top: 1px solid #000;">
+                <span>Total:</span>
+                <span>$${grandTotal.toFixed(2)}</span>
+            </div>
+        `;
     }
     
     function saveCartToStorage() {
         localStorage.setItem('sale_cart', JSON.stringify(cart));
     }
     
-    // Clear cart after successful sale
-    function clearCart() {
-        cart = [];
-        localStorage.removeItem('sale_cart');
-        updateCartDisplay();
-    }
+    // Clear cart
+    window.clearCart = function() {
+        if (cart.length === 0) return;
+        
+        if (confirm('Are you sure you want to clear the cart?')) {
+            cart = [];
+            localStorage.removeItem('sale_cart');
+            updateCartDisplay();
+            updateReceiptPreview();
+        }
+    };
     
-    // Form submission
-    document.getElementById('saleForm').addEventListener('submit', function(e) {
-        if (cart.length === 0) {
-            e.preventDefault();
-            alert('Please add items to cart before completing sale.');
-            return;
-        }
+    // Print receipt
+    function printReceipt() {
+        const receiptContent = document.getElementById('receiptPreview').innerHTML;
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
         
-        if (!confirm('Are you sure you want to complete this sale?')) {
-            e.preventDefault();
-            return;
-        }
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print Receipt</title>
+                <style>
+                    body { font-family: 'Courier New', monospace; font-size: 12px; padding: 20px; }
+                    .receipt { width: 300px; margin: 0 auto; }
+                    .receipt-header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                    .receipt-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+                    .receipt-transaction { font-size: 11px; color: #666; }
+                    .receipt-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                    .receipt-totals { border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
+                    .receipt-footer { text-align: center; margin-top: 15px; font-size: 10px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="receipt">${receiptContent}</div>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 1000);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
         
-        // Show loading state
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        submitBtn.disabled = true;
-        
-        // Clear cart on successful submission
-        setTimeout(() => {
-            if (this.checkValidity()) {
-                clearCart();
-            }
-        }, 100);
-    });
+        printWindow.document.close();
+    }
     
     // Image error handling
     document.querySelectorAll('.product-image').forEach(img => {
@@ -1368,5 +1735,23 @@ foreach ($categories as $cat) {
         };
     });
 </script>
+
+<?php
+// Display receipt after successful sale
+if (isset($show_receipt) && $show_receipt && isset($receipt_data)):
+?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Clear cart after successful sale
+        clearCart();
+        
+        // Show success receipt
+        alert('Sale completed successfully!\nTransaction: <?php echo $receipt_data['transaction_code']; ?>\nTotal: $<?php echo number_format($receipt_data['total'], 2); ?>');
+        
+        // You can add code here to automatically print receipt if needed
+        // printReceipt();
+    });
+</script>
+<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
