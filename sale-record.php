@@ -1,12 +1,12 @@
 <?php
-// sale-record.php
+// sale-record.php (UPDATED SECTION)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require 'includes/auth.php';
 require_login();
-require_staff(); // Only staff can access
+require_staff();
 
 $page_title = 'Record New Sale';
 include 'includes/header.php';
@@ -14,17 +14,33 @@ require 'config/db.php';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Generate transaction code
-    $transaction_code = 'ES-' . date('Ymd') . '-' . strtoupper(uniqid());
     $customer_name = $_POST['customer_name'] ?? 'Walk-in Customer';
     $customer_phone = $_POST['customer_phone'] ?? '';
     $customer_email = $_POST['customer_email'] ?? '';
     $payment_method = $_POST['payment_method'] ?? 'cash';
     $notes = $_POST['notes'] ?? '';
     
-    // Calculate totals from cart items
+    // Get cart items from form
+    $cart_items_json = $_POST['cart_items'] ?? '[]';
+    $cart_items = json_decode($cart_items_json, true);
+    
+    // Calculate totals
     $total_amount = 0;
-    $cart_items = $_POST['cart_items'] ?? [];
+    $subtotal = 0;
+    
+    if (!empty($cart_items) && is_array($cart_items)) {
+        foreach ($cart_items as $item) {
+            $subtotal += $item['unit_price'] * $item['quantity'];
+        }
+    }
+    
+    // Calculate tax and total
+    $tax_rate = 0.1; // 10% tax
+    $tax_amount = $subtotal * $tax_rate;
+    $total_amount = $subtotal + $tax_amount;
+    
+    // Generate transaction code
+    $transaction_code = 'ES-' . date('YmdHis') . '-' . strtoupper(substr(uniqid(), -6));
     
     // Start transaction
     $pdo->beginTransaction();
@@ -33,13 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert sale record
         $sql = "INSERT INTO EASYSALLES_SALES 
                 (transaction_code, customer_name, customer_phone, customer_email, 
-                 total_amount, final_amount, payment_method, staff_id, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                 total_amount, tax_amount, final_amount, payment_method, staff_id, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $pdo->prepare($sql);
-        
-        // Calculate final amount (could include discount/tax later)
-        $final_amount = $total_amount; // For now, same as total
         
         $stmt->execute([
             $transaction_code, 
@@ -47,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $customer_phone, 
             $customer_email,
             $total_amount,
-            $final_amount,
+            $tax_amount,
+            $total_amount, // final_amount = total_amount + tax_amount
             $payment_method,
             $_SESSION['user_id'],
             $notes
@@ -56,36 +70,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sale_id = $pdo->lastInsertId();
         
         // Insert sale items and update inventory
-        foreach ($cart_items as $item) {
-            $product_id = $item['product_id'];
-            $quantity = $item['quantity'];
-            $unit_price = $item['unit_price'];
-            $subtotal = $quantity * $unit_price;
-            
-            // Insert sale item
-            $item_sql = "INSERT INTO EASYSALLES_SALE_ITEMS 
-                         (sale_id, product_id, quantity, unit_price, subtotal)
-                         VALUES (?, ?, ?, ?, ?)";
-            $item_stmt = $pdo->prepare($item_sql);
-            $item_stmt->execute([$sale_id, $product_id, $quantity, $unit_price, $subtotal]);
-            
-            // Update product stock
-            $update_sql = "UPDATE EASYSALLES_PRODUCTS 
-                          SET current_stock = current_stock - ?
-                          WHERE product_id = ?";
-            $update_stmt = $pdo->prepare($update_sql);
-            $update_stmt->execute([$quantity, $product_id]);
-            
-            // Add to inventory log
-            $log_sql = "INSERT INTO EASYSALLES_INVENTORY_LOG 
-                       (product_id, change_type, quantity_change, previous_stock, 
-                        new_stock, reference_id, reference_type, created_by)
-                       SELECT ?, 'stock_out', ?, current_stock, 
-                              current_stock - ?, ?, 'sale', ?
-                       FROM EASYSALLES_PRODUCTS 
-                       WHERE product_id = ?";
-            $log_stmt = $pdo->prepare($log_sql);
-            $log_stmt->execute([$product_id, $quantity, $quantity, $sale_id, $_SESSION['user_id'], $product_id]);
+        if (!empty($cart_items) && is_array($cart_items)) {
+            foreach ($cart_items as $item) {
+                $product_id = $item['product_id'];
+                $quantity = $item['quantity'];
+                $unit_price = $item['unit_price'];
+                $subtotal_item = $quantity * $unit_price;
+                
+                // Insert sale item
+                $item_sql = "INSERT INTO EASYSALLES_SALE_ITEMS 
+                             (sale_id, product_id, quantity, unit_price, subtotal)
+                             VALUES (?, ?, ?, ?, ?)";
+                $item_stmt = $pdo->prepare($item_sql);
+                $item_stmt->execute([$sale_id, $product_id, $quantity, $unit_price, $subtotal_item]);
+                
+                // Update product stock
+                $update_sql = "UPDATE EASYSALLES_PRODUCTS 
+                              SET current_stock = current_stock - ?
+                              WHERE product_id = ?";
+                $update_stmt = $pdo->prepare($update_sql);
+                $update_stmt->execute([$quantity, $product_id]);
+                
+                // Get previous stock for log
+                $stock_sql = "SELECT current_stock FROM EASYSALLES_PRODUCTS WHERE product_id = ?";
+                $stock_stmt = $pdo->prepare($stock_sql);
+                $stock_stmt->execute([$product_id]);
+                $current_stock = $stock_stmt->fetchColumn();
+                $new_stock = $current_stock - $quantity;
+                
+                // Add to inventory log
+                $log_sql = "INSERT INTO EASYSALLES_INVENTORY_LOG 
+                           (product_id, change_type, quantity_change, previous_stock, 
+                            new_stock, reference_id, reference_type, created_by, notes)
+                           VALUES (?, 'stock_out', ?, ?, ?, ?, 'sale', ?, ?)";
+                $log_stmt = $pdo->prepare($log_sql);
+                $log_stmt->execute([
+                    $product_id, 
+                    $quantity, 
+                    $current_stock, 
+                    $new_stock,
+                    $sale_id,
+                    $_SESSION['user_id'],
+                    "Sold $quantity units in sale #$sale_id"
+                ]);
+            }
         }
         
         $pdo->commit();
@@ -97,11 +125,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get available products
-$products_sql = "SELECT * FROM EASYSALLES_PRODUCTS 
-                WHERE status = 'active' AND current_stock > 0 
-                ORDER BY product_name";
+// Get available products with categories
+$products_sql = "SELECT p.*, c.category_name, c.color 
+                FROM EASYSALLES_PRODUCTS p
+                LEFT JOIN EASYSALLES_CATEGORIES c ON p.category = c.category_name
+                WHERE p.status = 'active' AND p.current_stock > 0 
+                ORDER BY p.product_name";
 $products = $pdo->query($products_sql)->fetchAll();
+
+// Get categories for filter
+$categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category_name")->fetchAll();
 ?>
 
 <style>
