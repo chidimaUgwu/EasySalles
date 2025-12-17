@@ -420,6 +420,12 @@ if (session_status() === PHP_SESSION_NONE) {
                         <i class="fas fa-list"></i>
                         <span>Sales</span>
                     </a>
+
+                    <a href="products.php" 
+                       class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-box"></i>
+                        <span>PRODUCTS</span>
+                    </a>
                     
                     <?php if ($_SESSION['role'] == 1): ?>
                         <a href="staff-manage.php" 
@@ -464,9 +470,7 @@ if (session_status() === PHP_SESSION_NONE) {
             <!-- User Section (Desktop) -->
             <?php if (isset($_SESSION['user_id'])): ?>
                 <div class="user-section">
-                    <img src="<?php echo $_SESSION['avatar'] ?? 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['username'] ?? 'User') . '&background=7C3AED&color=fff&size=128'; ?>" 
-                         alt="User Avatar" 
-                         class="user-avatar">
+                    <!-- //here -->
                     <div class="user-info">
                         <span class="user-name"><?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
                         <span class="user-role"><?php echo $_SESSION['role'] == 1 ? 'Administrator' : 'Sales Staff'; ?></span>
