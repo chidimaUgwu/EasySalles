@@ -24,7 +24,7 @@ $page_title = 'Staff Dashboard';
 include 'includes/header.php';
 
 // Database connection for stats
-require 'includes/db.php';
+require 'config/db.php';
 
 // Get today's sales stats for this staff member
 $user_id = $_SESSION['user_id'];
