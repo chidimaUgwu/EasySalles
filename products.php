@@ -908,6 +908,7 @@ foreach ($categories as $cat) {
                             </div>
                         <?php endif; ?>
                         
+    
                         <div class="product-actions">
                             <button class="action-btn add-to-cart-btn" onclick="addToCart(<?php echo $product['product_id']; ?>)">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
