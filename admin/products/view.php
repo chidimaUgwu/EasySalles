@@ -515,17 +515,17 @@ try {
             </div>
         </div>
 
-        <div class="main-content">
-                        <div class="card-header">
-                            <h3 class="card-title">
-                                📦 Product Information
-                            </h3>
-                            <div class="btn-group">
-                                <span class="badge <?php echo $product['status'] == 'active' ? 'badge-success' : ($product['status'] == 'inactive' ? 'badge-warning' : 'badge-error'); ?>">
-                                    <?php echo ucfirst($product['status']); ?>
-                                </span>
-                            </div>
-                        </div>
+        <div class="main-content" style="padding: 1.5rem;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    📦 Product Information
+                </h3>
+                <div class="btn-group">
+                    <span class="badge <?php echo $product['status'] == 'active' ? 'badge-success' : ($product['status'] == 'inactive' ? 'badge-warning' : 'badge-error'); ?>">
+                        <?php echo ucfirst($product['status']); ?>
+                    </span>
+                </div>
+            </div>
                         <div style="padding: 1.5rem;">
                             <div class="product-info-grid">
                                 <div class="product-image-container">
