@@ -401,6 +401,15 @@ try {
             margin-top: 2rem;
             width: 100%;
         }
+
+        .three-div-row {
+            display: flex;          /* puts divs in one line */
+            gap: 20px;              /* space between them */
+        }
+
+        .card {
+            flex: 1;                /* equal width */
+        }
         
         .price-stat-box {
             text-align: center;
@@ -697,7 +706,7 @@ try {
                     <?php endif; ?>
                 </div>
                 
-                <div class="col-4">
+                <div class="three-div-row">
                     <!-- Quick Stats -->
                     <div class="card">
                         <div class="card-header">
