@@ -515,3 +515,110 @@ if (isset($_POST['change_password'])) {
                     <div class="form-group">
                         <label class="form-label">New Password</label>
                         <input type="password" name="new_password" class="form-control" 
+                               placeholder="Enter new password" required 
+                               oninput="checkPasswordStrength(this.value)">
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="passwordStrength"></div>
+                        </div>
+                        <div class="info-text">Password must be at least 8 characters long</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" name="confirm_password" class="form-control" 
+                               placeholder="Confirm new password" required>
+                    </div>
+                    
+                    <button type="submit" name="change_password" class="submit-btn">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Account Information (Read-only) -->
+            <div class="profile-section">
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Account Information</span>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-control" 
+                               value="ES-<?php echo str_pad($user['user_id'], 6, '0', STR_PAD_LEFT); ?>" disabled>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Account Status</label>
+                        <input type="text" class="form-control" 
+                               value="<?php echo ucfirst($user['status']); ?>" disabled>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Last Login</label>
+                        <input type="text" class="form-control" 
+                               value="<?php echo $user['last_login'] ? date('M j, Y h:i A', strtotime($user['last_login'])) : 'Never'; ?>" disabled>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Password Change</label>
+                        <input type="text" class="form-control" 
+                               value="<?php echo $user['last_password_change'] ? date('M j, Y', strtotime($user['last_password_change'])) : 'Never'; ?>" disabled>
+                    </div>
+                </div>
+                
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 2): ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Shift Hours</label>
+                            <input type="text" class="form-control" 
+                                   value="<?php echo $user['shift_start'] && $user['shift_end'] ? date('g:i A', strtotime($user['shift_start'])) . ' - ' . date('g:i A', strtotime($user['shift_end'])) : 'Not set'; ?>" disabled>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Shift Days</label>
+                            <input type="text" class="form-control" 
+                                   value="<?php echo htmlspecialchars($user['shift_days'] ?? 'Not set'); ?>" disabled>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        const strengthBar = document.getElementById('passwordStrength');
+        let strength = 0;
+        
+        if (password.length >= 8) strength += 25;
+        if (/[A-Z]/.test(password)) strength += 25;
+        if (/[0-9]/.test(password)) strength += 25;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        
+        strengthBar.style.width = strength + '%';
+        
+        if (strength < 50) {
+            strengthBar.className = 'password-strength-bar strength-weak';
+        } else if (strength < 75) {
+            strengthBar.className = 'password-strength-bar strength-medium';
+        } else {
+            strengthBar.className = 'password-strength-bar strength-strong';
+        }
+    }
+    
+    // Initialize password strength
+    document.addEventListener('DOMContentLoaded', function() {
+        const newPasswordInput = document.querySelector('input[name="new_password"]');
+        if (newPasswordInput) {
+            checkPasswordStrength(newPasswordInput.value);
+        }
+    });
+</script>
+
+<?php include 'includes/footer.php'; ?>
