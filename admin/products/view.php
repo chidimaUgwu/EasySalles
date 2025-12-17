@@ -610,7 +610,8 @@ try {
                         </div>
                     </div>
                     
-                    <!-- Supplier Information -->
+                    <div >
+                        <!-- Supplier Information -->
                     <?php if (!empty($product['supplier']) || !empty($product['supplier_name'])): ?>
                     <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
@@ -806,7 +807,6 @@ try {
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 
