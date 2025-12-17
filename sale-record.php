@@ -125,28 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        if ($pdo->commit()) {
-        $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
-        $show_receipt = true;
-        $receipt_data = [
-                'transaction_code' => $transaction_code,
-                'customer_name' => $customer_name,
-                'items' => $cart_items,
-                'subtotal' => $subtotal,
-                'discount' => $discount_amount,
-                'tax' => $tax_amount,
-                'total' => $total_amount,
-                'payment_method' => $payment_method,
-                'notes' => $notes
-            ];
         
-        // Clear cart after successful sale
-    $_SESSION['cart'] = [];
-    
-    // Clear localStorage if exists
-    echo '<script>localStorage.removeItem("sale_cart");</script>';
-}
-
         $pdo->commit();
         $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
         $show_receipt = true;
