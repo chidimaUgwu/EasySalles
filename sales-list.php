@@ -1,5 +1,5 @@
 <?php
-// sales-list.php
+// sales-list.php (UPDATED CALCULATIONS)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -46,8 +46,10 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $sales = $stmt->fetchAll();
 
-// Get totals
-$total_sql = "SELECT COUNT(*) as count, SUM(final_amount) as total 
+// Get totals - FIXED CALCULATIONS
+$total_sql = "SELECT COUNT(*) as count, 
+                     COALESCE(SUM(final_amount), 0) as total,
+                     COALESCE(AVG(final_amount), 0) as average
               FROM EASYSALLES_SALES 
               WHERE DATE(sale_date) BETWEEN ? AND ?";
 $total_params = [$date_from, $date_to];
@@ -60,6 +62,20 @@ if (isset($_SESSION['role']) && $_SESSION['role'] == 2) {
 $total_stmt = $pdo->prepare($total_sql);
 $total_stmt->execute($total_params);
 $totals = $total_stmt->fetch();
+
+// Get today's count
+$today = date('Y-m-d');
+$today_sql = "SELECT COUNT(*) FROM EASYSALLES_SALES WHERE DATE(sale_date) = ?";
+$today_params = [$today];
+
+if (isset($_SESSION['role']) && $_SESSION['role'] == 2) {
+    $today_sql .= " AND staff_id = ?";
+    $today_params[] = $_SESSION['user_id'];
+}
+
+$today_stmt = $pdo->prepare($today_sql);
+$today_stmt->execute($today_params);
+$today_count = $today_stmt->fetchColumn();
 ?>
 
 <style>
