@@ -29,7 +29,7 @@ try {
         echo '<div class="alert alert-error">Product not found!</div>';
         echo '<a href="index.php" class="btn btn-primary">Back to Products</a>';
         require_once '../includes/footer.php';
-    exit;
+        exit;
     }
 } catch (PDOException $e) {
     echo '<div class="alert alert-error">Database error: ' . $e->getMessage() . '</div>';
@@ -128,7 +128,6 @@ try {
             --text-light: #64748b;
             --border: #e2e8f0;
             --shadow: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         
         * {
@@ -226,41 +225,34 @@ try {
             border-color: var(--secondary);
         }
         
-        /* FIXED: Main layout with flexbox for better alignment */
+        /* MAIN CONTENT LAYOUT FIX */
         .main-content {
-            display: block;
+            display: flex;
+            flex-direction: column;
             width: 100%;
             min-height: calc(100vh - 150px);
             overflow: visible;
         }
         
-        /* FIXED: Changed to flexbox with proper wrapping */
-        .dashboard-layout {
-            display: flex;
-            flex-wrap: wrap;
+        .dashboard-row {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
             gap: 1.5rem;
+            margin: 1.5rem 0;
             width: 100%;
-            align-items: flex-start;
+            overflow: visible;
         }
         
-        .main-column {
-            flex: 1;
-            min-width: 300px;
-            flex-basis: 65%;
-        }
-        
-        .sidebar-column {
-            flex: 1;
-            min-width: 300px;
-            flex-basis: 35%;
-            max-width: 450px;
-        }
-        
-        /* Ensure cards within columns align properly */
-        .main-column .card,
-        .sidebar-column .card {
-            margin-bottom: 1.5rem;
+        .col-8 {
+            grid-column: span 8;
             width: 100%;
+            overflow: visible;
+        }
+        
+        .col-4 {
+            grid-column: span 4;
+            width: 100%;
+            overflow: visible;
         }
         
         .card {
@@ -268,6 +260,7 @@ try {
             border-radius: 12px;
             box-shadow: var(--shadow);
             overflow: hidden;
+            margin-bottom: 1.5rem;
             width: 100%;
             min-height: fit-content;
         }
@@ -426,38 +419,14 @@ try {
             width: 100%;
         }
         
-        /* Ensure all cards in sidebar start at same height */
-        .sidebar-column {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .sidebar-column .card {
-            flex-shrink: 0;
-        }
-        
-        /* FIXED: Add clearfix for better layout */
-        .clearfix::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-        
         /* RESPONSIVE DESIGN */
         @media (max-width: 1200px) {
-            .dashboard-layout {
-                flex-direction: column;
+            .dashboard-row {
+                grid-template-columns: 1fr;
             }
             
-            .main-column,
-            .sidebar-column {
-                flex-basis: 100%;
-                max-width: 100%;
-            }
-            
-            .sidebar-column {
-                max-width: 100%;
+            .col-8, .col-4 {
+                grid-column: span 12;
             }
         }
         
@@ -508,10 +477,6 @@ try {
                 width: 100%;
                 justify-content: flex-start;
             }
-            
-            .dashboard-layout {
-                gap: 1rem;
-            }
         }
         
         @media (max-width: 576px) {
@@ -527,58 +492,6 @@ try {
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
             }
-        }
-        
-        /* FIXED: Add for print support */
-        @media print {
-            .page-actions, .btn, .badge {
-                display: none !important;
-            }
-            
-            .card {
-                border: 1px solid #000 !important;
-                box-shadow: none !important;
-                page-break-inside: avoid;
-            }
-            
-            .dashboard-layout {
-                display: block !important;
-            }
-            
-            .main-column, .sidebar-column {
-                width: 100% !important;
-                margin-bottom: 20px !important;
-                max-width: 100% !important;
-            }
-            
-            .product-info-grid {
-                display: block !important;
-            }
-            
-            .price-stats-grid {
-                display: block !important;
-            }
-        }
-        
-        /* Additional styles for better alignment */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 1rem;
-            background: var(--bg);
-            border-radius: 10px;
-        }
-        
-        /* Ensure consistent card heights in sidebar */
-        .sidebar-sticky {
-            position: sticky;
-            top: 20px;
         }
     </style>
 </head>
@@ -603,9 +516,8 @@ try {
         </div>
 
         <div class="main-content">
-            <div class="dashboard-layout">
-                <!-- Main Content Column -->
-                <div class="main-column">
+            <div class="dashboard-row">
+                <div class="col-8">
                     <!-- Product Information Card -->
                     <div class="card">
                         <div class="card-header">
@@ -704,7 +616,7 @@ try {
                     
                     <!-- Supplier Information -->
                     <?php if (!empty($product['supplier']) || !empty($product['supplier_name'])): ?>
-                    <div class="card">
+                    <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
                             <h3 class="card-title">
                                 🚚 Supplier Information
@@ -738,7 +650,7 @@ try {
                     
                     <!-- Recent Sales -->
                     <?php if (!empty($recent_sales)): ?>
-                    <div class="card">
+                    <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
                             <h3 class="card-title">
                                 🛒 Recent Sales
@@ -785,23 +697,22 @@ try {
                     <?php endif; ?>
                 </div>
                 
-                <!-- Sidebar Column -->
-                <div class="sidebar-column">
+                <div class="col-4">
                     <!-- Quick Stats -->
-                    <div class="card sidebar-sticky">
+                    <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">
                                 📊 Sales Statistics
                             </h3>
                         </div>
                         <div style="padding: 1.5rem;">
-                            <div class="stats-grid">
-                                <div class="stat-item">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                                <div style="text-align: center;">
                                     <small class="text-muted">Total Sold</small>
                                     <h2 style="margin: 0.5rem 0;"><?php echo $sales_stats['total_sold'] ?? 0; ?></h2>
                                     <small><?php echo $product['unit_type']; ?></small>
                                 </div>
-                                <div class="stat-item">
+                                <div style="text-align: center;">
                                     <small class="text-muted">Total Revenue</small>
                                     <h2 style="margin: 0.5rem 0; color: var(--success);">$<?php echo number_format($sales_stats['total_revenue'] ?? 0, 2); ?></h2>
                                     <small>From sales</small>
@@ -827,7 +738,7 @@ try {
                     </div>
                     
                     <!-- Inventory History -->
-                    <div class="card">
+                    <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
                             <h3 class="card-title">
                                 📋 Recent Stock Changes
@@ -865,7 +776,7 @@ try {
                     </div>
                     
                     <!-- Quick Actions -->
-                    <div class="card">
+                    <div class="card" style="margin-top: 1.5rem;">
                         <div class="card-header">
                             <h3 class="card-title">
                                 ⚡ Quick Actions
@@ -956,42 +867,33 @@ try {
             // In a real app, you would fetch updated stock via AJAX
             console.log('Auto-refresh stock info...');
         }, 30000);
-        
-        // Ensure sidebar cards align properly
-        function alignSidebarCards() {
-            const sidebarCards = document.querySelectorAll('.sidebar-column .card');
-            let maxHeight = 0;
-            
-            // Reset heights first
-            sidebarCards.forEach(card => {
-                card.style.minHeight = 'auto';
-            });
-            
-            // Set equal heights for cards in same row (responsive)
-            if (window.innerWidth >= 1200) {
-                // Only on desktop
-                for (let i = 0; i < sidebarCards.length; i += 2) {
-                    const card1 = sidebarCards[i];
-                    const card2 = sidebarCards[i + 1];
-                    
-                    if (card1 && card2) {
-                        const height1 = card1.offsetHeight;
-                        const height2 = card2.offsetHeight;
-                        maxHeight = Math.max(height1, height2);
-                        
-                        card1.style.minHeight = maxHeight + 'px';
-                        card2.style.minHeight = maxHeight + 'px';
-                    }
-                }
-            }
-        }
-        
-        // Run alignment on load and resize
-        window.addEventListener('load', alignSidebarCards);
-        window.addEventListener('resize', alignSidebarCards);
     </script>
 
     <style>
+        @media print {
+            .page-actions, .btn, .badge {
+                display: none !important;
+            }
+            .card {
+                border: 1px solid #000 !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+            .dashboard-row {
+                display: block !important;
+            }
+            .col-8, .col-4 {
+                width: 100% !important;
+                margin-bottom: 20px !important;
+            }
+            .product-info-grid {
+                display: block !important;
+            }
+            .price-stats-grid {
+                display: block !important;
+            }
+        }
+        
         /* Additional responsive fixes */
         .has-scroll {
             overflow-x: auto !important;
