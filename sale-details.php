@@ -1,5 +1,5 @@
 <?php
-// sale-details.php
+// sale-details.php - FIXED VERSION
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -57,29 +57,32 @@ $items = $items_stmt->fetchAll();
 
 // Handle form submission for editing
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $customer_name = $_POST['customer_name'] ?? $sale['customer_name'];
-    $customer_phone = $_POST['customer_phone'] ?? $sale['customer_phone'];
-    $customer_email = $_POST['customer_email'] ?? $sale['customer_email'];
-    $payment_method = $_POST['payment_method'] ?? $sale['payment_method'];
-    $payment_status = $_POST['payment_status'] ?? $sale['payment_status'];
-    $notes = $_POST['notes'] ?? $sale['notes'];
-    
-    // Only admin can edit amounts
-    if (isset($_SESSION['role']) && $_SESSION['role'] == 1) {
-        $subtotal_amount = floatval($_POST['subtotal_amount'] ?? $sale['subtotal_amount']);
-        $discount_amount = floatval($_POST['discount_amount'] ?? $sale['discount_amount']);
-        $tax_amount = floatval($_POST['tax_amount'] ?? $sale['tax_amount']);
-        $total_amount = floatval($_POST['total_amount'] ?? $sale['total_amount']);
-        $final_amount = floatval($_POST['final_amount'] ?? $sale['final_amount']);
-    } else {
-        $subtotal_amount = $sale['subtotal_amount'];
-        $discount_amount = $sale['discount_amount'];
-        $tax_amount = $sale['tax_amount'];
-        $total_amount = $sale['total_amount'];
-        $final_amount = $sale['final_amount'];
-    }
-    
     try {
+        // Get form data
+        $customer_name = $_POST['customer_name'] ?? $sale['customer_name'];
+        $customer_phone = $_POST['customer_phone'] ?? $sale['customer_phone'];
+        $customer_email = $_POST['customer_email'] ?? $sale['customer_email'];
+        $payment_method = $_POST['payment_method'] ?? $sale['payment_method'];
+        $payment_status = $_POST['payment_status'] ?? $sale['payment_status'];
+        $notes = $_POST['notes'] ?? $sale['notes'];
+        
+        // For non-admin users, use original amounts
+        if (isset($_SESSION['role']) && $_SESSION['role'] == 1) {
+            // Admin can edit amounts
+            $subtotal_amount = floatval($_POST['subtotal_amount'] ?? $sale['subtotal_amount']);
+            $discount_amount = floatval($_POST['discount_amount'] ?? $sale['discount_amount']);
+            $tax_amount = floatval($_POST['tax_amount'] ?? $sale['tax_amount']);
+            $final_amount = floatval($_POST['final_amount'] ?? $sale['final_amount']);
+            $total_amount = $final_amount; // Set total_amount to final_amount
+        } else {
+            // Staff cannot edit amounts
+            $subtotal_amount = $sale['subtotal_amount'];
+            $discount_amount = $sale['discount_amount'];
+            $tax_amount = $sale['tax_amount'];
+            $final_amount = $sale['final_amount'];
+            $total_amount = $sale['total_amount'];
+        }
+        
         $update_sql = "UPDATE EASYSALLES_SALES SET 
                       customer_name = ?,
                       customer_phone = ?,
@@ -104,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $subtotal_amount,
             $discount_amount,
             $tax_amount,
-            $total_amount,
+            $total_amount, // Added this line
             $final_amount,
             $sale_id
         ];
@@ -116,21 +119,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $update_stmt = $pdo->prepare($update_sql);
-        $update_stmt->execute($update_params);
+        $result = $update_stmt->execute($update_params);
         
-        $success = "Sale updated successfully!";
-        
-        // Refresh sale data
-        $stmt->execute($params);
-        $sale = $stmt->fetch();
+        if ($result) {
+            $success = "Sale updated successfully!";
+            
+            // Refresh sale data
+            $stmt->execute($params);
+            $sale = $stmt->fetch();
+        } else {
+            $error = "Failed to update sale. Please try again.";
+        }
         
     } catch (Exception $e) {
         $error = "Failed to update sale: " . $e->getMessage();
+        error_log("Sale update error: " . $e->getMessage());
     }
 }
 ?>
 
 <style>
+    /* Keep your CSS styles from the earlier version - they're simpler and work better */
     .sale-details-container {
         max-width: 1200px;
         margin: 2rem auto;
@@ -261,89 +270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         color: var(--primary);
     }
     
-    .status-badge {
-        display: inline-block;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-    
-    .status-paid {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
-        color: #10B981;
-        border: 1px solid #10B981;
-    }
-    
-    .status-pending {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-        color: #F59E0B;
-        border: 1px solid #F59E0B;
-    }
-    
-    .status-cancelled {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-        color: #EF4444;
-        border: 1px solid #EF4444;
-    }
-    
-    .payment-method-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
-        color: var(--primary);
-        border: 1px solid var(--primary);
-    }
-    
-    .items-table-container {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
-        border: 1px solid var(--border);
-        margin-bottom: 2rem;
-        overflow-x: auto;
-    }
-    
-    .items-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .items-table th {
-        text-align: left;
-        padding: 1rem;
-        font-weight: 600;
-        color: var(--text);
-        border-bottom: 2px solid var(--border);
-        white-space: nowrap;
-    }
-    
-    .items-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        vertical-align: top;
-    }
-    
-    .items-table tbody tr:hover {
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
-    }
-    
-    .product-name {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-    }
-    
-    .product-code {
-        font-size: 0.85rem;
-        color: #64748b;
-    }
-    
     .form-group {
         margin-bottom: 1rem;
     }
@@ -396,6 +322,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
         color: #EF4444;
         border-left-color: #EF4444;
+    }
+    
+    .items-table-container {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+    
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .items-table th {
+        text-align: left;
+        padding: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        border-bottom: 2px solid var(--border);
+        white-space: nowrap;
+    }
+    
+    .items-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+    }
+    
+    .items-table tbody tr:hover {
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+    }
+    
+    .product-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .product-code {
+        font-size: 0.85rem;
+        color: #64748b;
     }
     
     .empty-state {
@@ -458,7 +428,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     <?php endif; ?>
     
-    <form method="POST" action="">
+    <!-- SIMPLIFIED FORM - Works like the earlier version -->
+    <form method="POST" action="" id="saleForm">
         <div class="sale-details-grid">
             <!-- Customer Information -->
             <div class="detail-card">
@@ -468,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Customer Name</label>
+                    <label class="form-label">Customer Name *</label>
                     <input type="text" name="customer_name" class="form-control" 
                            value="<?php echo htmlspecialchars($sale['customer_name']); ?>" required>
                 </div>
@@ -553,13 +524,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label class="form-label">Subtotal</label>
                             <input type="number" name="subtotal_amount" class="form-control" step="0.01" min="0"
-                                   value="<?php echo $sale['subtotal_amount']; ?>">
+                                   value="<?php echo number_format($sale['subtotal_amount'], 2); ?>">
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Discount</label>
                             <input type="number" name="discount_amount" class="form-control" step="0.01" min="0"
-                                   value="<?php echo $sale['discount_amount']; ?>">
+                                   value="<?php echo number_format($sale['discount_amount'], 2); ?>">
                         </div>
                     </div>
                     
@@ -567,13 +538,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label class="form-label">Tax</label>
                             <input type="number" name="tax_amount" class="form-control" step="0.01" min="0"
-                                   value="<?php echo $sale['tax_amount']; ?>">
+                                   value="<?php echo number_format($sale['tax_amount'], 2); ?>">
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Final Amount</label>
                             <input type="number" name="final_amount" class="form-control" step="0.01" min="0"
-                                   value="<?php echo $sale['final_amount']; ?>">
+                                   value="<?php echo number_format($sale['final_amount'], 2); ?>">
                         </div>
                     </div>
                 <?php else: ?>
@@ -608,7 +579,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         
-        <!-- Sale Items -->
+        <!-- Sale Items (View Only) -->
         <div class="items-table-container">
             <div class="card-title">
                 <i class="fas fa-box"></i>
@@ -659,8 +630,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Form Actions -->
         <div class="edit-form-actions">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Save Changes
+            <button type="submit" class="btn btn-primary" name="save_changes">
+                <i class="fas fa-save"></i> Save All Changes
             </button>
             
             <a href="sale-details.php?id=<?php echo $sale_id; ?>" class="btn cancel-btn">
@@ -671,39 +642,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    // Update form when payment method changes
-    document.querySelector('select[name="payment_status"]').addEventListener('change', function() {
-        const badge = document.querySelector('.status-badge');
-        if (badge) {
-            badge.className = 'status-badge status-' + this.value;
-            badge.textContent = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+    // Simple form validation
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+        const customerName = this.querySelector('input[name="customer_name"]');
+        if (!customerName.value.trim()) {
+            e.preventDefault();
+            alert('Customer name is required!');
+            customerName.focus();
+            return false;
         }
-    });
-    
-    // Calculate totals if admin is editing amounts
-    <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 1): ?>
-    function calculateTotals() {
-        const subtotal = parseFloat(document.querySelector('input[name="subtotal_amount"]').value) || 0;
-        const discount = parseFloat(document.querySelector('input[name="discount_amount"]').value) || 0;
-        const tax = parseFloat(document.querySelector('input[name="tax_amount"]').value) || 0;
-        const finalAmount = subtotal - discount + tax;
         
-        document.querySelector('input[name="final_amount"]').value = finalAmount.toFixed(2);
-    }
-    function viewSale(saleId) {
-    window.location.href = `sale-details.php?id=${saleId}`;
-}
-
-// Print receipt
-function printReceipt(saleId) {
-    const printWindow = window.open(`print-receipt.php?id=${saleId}&print=true&autoclose=true`, '_blank', 'width=800,height=600');
-    printWindow.focus();
-}
-    document.querySelectorAll('input[name="subtotal_amount"], input[name="discount_amount"], input[name="tax_amount"]')
-        .forEach(input => {
-            input.addEventListener('input', calculateTotals);
-        });
-    <?php endif; ?>
+        // Ask for confirmation
+        if (!confirm('Are you sure you want to save changes?')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>
