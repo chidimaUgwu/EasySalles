@@ -718,7 +718,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     <?php endif; ?>
     
-    <form method="POST" action="" id="saleForm" onsubmit="return validateForm()">
+    <form method="POST" action="" id="saleForm"> <!-- onsubmit="return validateForm()" -->
         <div class="sale-details-grid">
             <!-- Customer Information -->
             <div class="detail-card">
