@@ -805,12 +805,110 @@ foreach ($categories as $cat) {
             });
         });
         
-        // Add to cart functionality
-        window.addToCart = function(productId) {
-            // In a real implementation, this would add the product to the cart
-            // For now, redirect to sale record page
-            window.location.href = `sale-record.php?add_product=${productId}`;
+        // In products.php, update the addToCart function
+    window.addToCart = function(productId, quantity = 1) {
+        // Show loading state
+        const btn = event.target.closest('.add-to-cart-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        btn.disabled = true;
+        
+        // Send AJAX request
+        fetch('ajax/add_to_cart.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `product_id=${productId}&quantity=${quantity}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification('success', data.message);
+                
+                // Update cart count in header if it exists
+                updateCartCount(data.cart_count);
+                
+                // Highlight product card
+                const productCard = event.target.closest('.product-card');
+                productCard.classList.add('added-to-cart');
+                setTimeout(() => {
+                    productCard.classList.remove('added-to-cart');
+                }, 1000);
+                
+                // Optional: Auto-redirect to cart page
+                // window.location.href = 'sale-record.php';
+                
+            } else {
+                showNotification('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('error', 'Network error. Please try again.');
+        })
+        .finally(() => {
+            // Restore button
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
+    };
+
+    // Add notification function
+    function showNotification(type, message) {
+        // Remove existing notifications
+        const existing = document.querySelector('.cart-notification');
+        if (existing) existing.remove();
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.className = `cart-notification cart-notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${message}</span>
+            <a href="sale-record.php" class="view-cart-btn">View Cart</a>
+            <button class="close-notification">&times;</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+        
+        // Close button
+        notification.querySelector('.close-notification').onclick = () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
         };
+    }
+
+    // Update cart count function
+    function updateCartCount(count) {
+        const cartCount = document.querySelector('.cart-count');
+        if (cartCount) {
+            cartCount.textContent = count;
+            cartCount.style.display = count > 0 ? 'inline' : 'none';
+        }
+    }
+
+    // Initialize cart count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get initial cart count
+        fetch('ajax/get_cart_count.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateCartCount(data.count);
+                }
+            });
+    });
         
         // View product details
         window.viewProductDetails = function(productId) {
