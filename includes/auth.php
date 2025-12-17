@@ -2,9 +2,12 @@
 // includes/auth.php
 require_once __DIR__ . '/../config.php';
 
-// includes/auth.php - Add this after session_start()
+// Add this to includes/auth.php after session_start()
 if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+    $_SESSION['cart'] = [
+        'items' => [],  // Array of cart items
+        'count' => 0    // Total item count
+    ];
 }
 
 function require_login() {
