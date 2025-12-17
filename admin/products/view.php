@@ -497,7 +497,6 @@ try {
 </head>
 <body>
     <div class="container">
-        <div class="page-header">
             <div class="page-title">
                 <h2>Product Details</h2>
                 <p>View complete product information and history</p>
