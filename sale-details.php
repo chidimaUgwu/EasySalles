@@ -690,7 +690,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         document.querySelector('input[name="final_amount"]').value = finalAmount.toFixed(2);
     }
-    
+    function viewSale(saleId) {
+    window.location.href = `sale-details.php?id=${saleId}`;
+}
+
+// Print receipt
+function printReceipt(saleId) {
+    const printWindow = window.open(`print-receipt.php?id=${saleId}&print=true&autoclose=true`, '_blank', 'width=800,height=600');
+    printWindow.focus();
+}
     document.querySelectorAll('input[name="subtotal_amount"], input[name="discount_amount"], input[name="tax_amount"]')
         .forEach(input => {
             input.addEventListener('input', calculateTotals);
