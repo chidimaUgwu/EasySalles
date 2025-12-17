@@ -1,5 +1,5 @@
 <?php
-// sale-record.php (UPDATED SECTION)
+// sale-record.php (INTEGRATED WITH PRODUCTS DESIGN)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -125,21 +125,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Get filter parameters
+$category = $_GET['category'] ?? '';
+$search = $_GET['search'] ?? '';
+
 // Get available products with categories
-$products_sql = "SELECT p.*, c.category_name, c.color 
-                FROM EASYSALLES_PRODUCTS p
-                LEFT JOIN EASYSALLES_CATEGORIES c ON p.category = c.category_name
-                WHERE p.status = 'active' AND p.current_stock > 0 
-                ORDER BY p.product_name";
-$products = $pdo->query($products_sql)->fetchAll();
+$sql = "SELECT p.*, c.category_name, c.color 
+        FROM EASYSALLES_PRODUCTS p
+        LEFT JOIN EASYSALLES_CATEGORIES c ON p.category = c.category_name
+        WHERE p.status = 'active' AND p.current_stock > 0";
+$params = [];
+
+if ($search) {
+    $sql .= " AND (p.product_name LIKE ? OR p.description LIKE ? OR p.product_code LIKE ?)";
+    $search_term = "%$search%";
+    $params = array_merge($params, [$search_term, $search_term, $search_term]);
+}
+
+if ($category) {
+    $sql .= " AND p.category = ?";
+    $params[] = $category;
+}
+
+$sql .= " ORDER BY p.product_name";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$products = $stmt->fetchAll();
 
 // Get categories for filter
 $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category_name")->fetchAll();
+
+// Get category counts
+$category_counts = [];
+foreach ($categories as $cat) {
+    $count_sql = "SELECT COUNT(*) FROM EASYSALLES_PRODUCTS WHERE category = ? AND status = 'active' AND current_stock > 0";
+    $count_stmt = $pdo->prepare($count_sql);
+    $count_stmt->execute([$cat['category_name']]);
+    $category_counts[$cat['category_name']] = $count_stmt->fetchColumn();
+}
 ?>
 
 <style>
     .sale-record-container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 2rem auto;
         padding: 0 1.5rem;
     }
@@ -198,18 +227,68 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         color: var(--primary);
     }
     
-    .form-group {
+    /* Product Grid Styles from products.php */
+    .category-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--card-bg);
+        border-radius: 15px;
+        border: 1px solid var(--border);
+    }
+    
+    .category-tab {
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 2px solid transparent;
+        color: var(--text);
+        background: var(--bg);
+    }
+    
+    .category-tab:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .category-tab.active {
+        border-color: var(--primary);
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
+        color: var(--primary);
+        font-weight: 600;
+    }
+    
+    .category-count {
+        font-size: 0.85rem;
+        background: rgba(255, 255, 255, 0.3);
+        padding: 0.1rem 0.5rem;
+        border-radius: 10px;
+        min-width: 24px;
+        text-align: center;
+    }
+    
+    .search-box {
+        position: relative;
         margin-bottom: 1.5rem;
     }
     
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--text);
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
     }
     
-    .form-control {
+    .search-box input {
+        padding-left: 3rem;
         width: 100%;
         padding: 0.875rem 1rem;
         border: 2px solid var(--border);
@@ -220,7 +299,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         color: var(--text);
     }
     
-    .form-control:focus {
+    .search-box input:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
@@ -228,49 +307,240 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     
     .products-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    .products-grid::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .products-grid::-webkit-scrollbar-track {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    
+    .products-grid::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 3px;
     }
     
     .product-card {
         background: var(--card-bg);
-        border: 2px solid var(--border);
         border-radius: 15px;
-        padding: 1.25rem;
-        cursor: pointer;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
         transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
     }
     
     .product-card:hover {
-        border-color: var(--primary);
         transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.1);
+        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.15);
+        border-color: var(--primary);
     }
     
-    .product-card.active {
+    .product-card.added {
         border-color: var(--primary);
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
     }
     
-    .product-name {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: var(--text);
+    .product-image-container {
+        height: 150px;
+        overflow: hidden;
+        position: relative;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
     }
     
-    .product-price {
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .product-card:hover .product-image {
+        transform: scale(1.05);
+    }
+    
+    .no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
         color: var(--primary);
-        font-weight: 700;
+        font-size: 3rem;
+    }
+    
+    .product-header {
+        padding: 1rem 1rem 0.5rem;
+    }
+    
+    .product-code {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.8rem;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+        padding: 0.2rem 0.6rem;
+        border-radius: 15px;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-name {
+        font-family: 'Poppins', sans-serif;
         font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
-    .product-stock {
-        font-size: 0.85rem;
+    .category-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        width: fit-content;
+    }
+    
+    .product-details {
+        padding: 0 1rem 1rem;
+        flex-grow: 1;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .detail-item {
+        text-align: center;
+        padding: 0.5rem;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .detail-label {
+        font-size: 0.75rem;
         color: #64748b;
-        margin-top: 0.5rem;
+        margin-bottom: 0.2rem;
     }
     
+    .detail-value {
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+    
+    .stock-indicator {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 0.75rem 0;
+        overflow: hidden;
+    }
+    
+    .stock-level {
+        height: 100%;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+    
+    .stock-low { background: #EF4444; }
+    .stock-medium { background: #F59E0B; }
+    .stock-high { background: #10B981; }
+    
+    .stock-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-bottom: 0.75rem;
+    }
+    
+    .product-price-section {
+        padding: 1rem;
+        border-top: 2px solid var(--border);
+        text-align: center;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.03), rgba(236, 72, 153, 0.01));
+    }
+    
+    .price-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 0.3rem;
+    }
+    
+    .price-value {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .add-to-cart-btn {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        margin-top: 0.75rem;
+    }
+    
+    .add-to-cart-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+    }
+    
+    .add-to-cart-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        grid-column: 1 / -1;
+        color: #64748b;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--border);
+    }
+    
+    /* Cart Styles */
     .cart-container {
         background: var(--card-bg);
         border-radius: 20px;
@@ -279,6 +549,8 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         border: 1px solid var(--border);
         position: sticky;
         top: 100px;
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
     }
     
     .cart-item {
@@ -296,11 +568,12 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     .cart-item-info h4 {
         font-weight: 600;
         margin-bottom: 0.25rem;
+        font-size: 1rem;
     }
     
     .cart-item-price {
         color: #64748b;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     
     .cart-item-controls {
@@ -310,15 +583,16 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     }
     
     .quantity-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
         border: 2px solid var(--border);
         background: var(--card-bg);
         color: var(--text);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        font-size: 0.9rem;
     }
     
     .quantity-btn:hover {
@@ -328,19 +602,20 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     }
     
     .quantity-display {
-        min-width: 40px;
+        min-width: 35px;
         text-align: center;
         font-weight: 600;
+        font-size: 0.95rem;
     }
     
     .remove-btn {
         background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
         color: #EF4444;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        border-radius: 7px;
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         transition: all 0.3s ease;
     }
     
@@ -350,7 +625,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     }
     
     .cart-total {
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         padding-top: 1.5rem;
         border-top: 2px solid var(--border);
     }
@@ -359,10 +634,11 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.5rem;
+        font-size: 0.95rem;
     }
     
     .grand-total {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         font-weight: 700;
         color: var(--primary);
         margin-top: 1rem;
@@ -381,7 +657,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-top: 2rem;
+        margin-top: 1.5rem;
     }
     
     .submit-btn:hover {
@@ -416,31 +692,42 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
     
     .empty-cart {
         text-align: center;
-        padding: 3rem 1rem;
+        padding: 2rem 1rem;
         color: #64748b;
     }
     
     .empty-cart i {
-        font-size: 3rem;
+        font-size: 2.5rem;
         margin-bottom: 1rem;
         color: var(--border);
     }
     
-    .search-box {
-        position: relative;
+    .form-group {
         margin-bottom: 1.5rem;
     }
     
-    .search-box i {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #64748b;
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
     }
     
-    .search-box input {
-        padding-left: 3rem;
+    .form-control {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: var(--card-bg);
+        color: var(--text);
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
     
     .payment-methods {
@@ -474,6 +761,47 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         font-size: 1.25rem;
         color: var(--primary);
     }
+    
+    .cart-items-container {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    .cart-items-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .cart-items-container::-webkit-scrollbar-track {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    
+    .cart-items-container::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 3px;
+    }
+    
+    .product-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .product-status {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
 </style>
 
 <div class="sale-record-container">
@@ -505,29 +833,149 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
                     <span>Select Products</span>
                 </div>
                 
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="productSearch" class="form-control" placeholder="Search products...">
+                <!-- Category Tabs -->
+                <div class="category-tabs">
+                    <a href="sale-record.php" class="category-tab <?php echo !$category ? 'active' : ''; ?>">
+                        <i class="fas fa-layer-group"></i>
+                        <span>All Products</span>
+                        <span class="category-count">
+                            <?php 
+                            $all_count_sql = "SELECT COUNT(*) FROM EASYSALLES_PRODUCTS WHERE status = 'active' AND current_stock > 0";
+                            echo $pdo->query($all_count_sql)->fetchColumn();
+                            ?>
+                        </span>
+                    </a>
+                    
+                    <?php foreach ($categories as $cat): ?>
+                        <a href="sale-record.php?category=<?php echo urlencode($cat['category_name']); ?>" 
+                           class="category-tab <?php echo $category === $cat['category_name'] ? 'active' : ''; ?>"
+                           style="color: <?php echo $cat['color']; ?>; border-color: <?php echo $cat['color']; ?>20;">
+                            <i class="fas fa-tag"></i>
+                            <span><?php echo htmlspecialchars($cat['category_name']); ?></span>
+                            <span class="category-count"><?php echo $category_counts[$cat['category_name']] ?? 0; ?></span>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
                 
+                <!-- Search Box -->
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="productSearch" class="form-control" 
+                           value="<?php echo htmlspecialchars($search); ?>" 
+                           placeholder="Search products by name, code, or description...">
+                </div>
+                
+                <!-- Products Grid -->
                 <div class="products-grid" id="productsGrid">
-                    <?php foreach ($products as $product): ?>
-                        <div class="product-card" 
-                             data-id="<?php echo $product['product_id']; ?>"
-                             data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
-                             data-price="<?php echo $product['unit_price']; ?>"
-                             data-stock="<?php echo $product['current_stock']; ?>">
-                            <div class="product-name"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                            <div class="product-price">$<?php echo number_format($product['unit_price'], 2); ?></div>
-                            <div class="product-stock">Stock: <?php echo $product['current_stock']; ?> <?php echo $product['unit_type']; ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                    
                     <?php if (empty($products)): ?>
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #64748b;">
-                            <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                            <p>No products available</p>
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No Products Available</h3>
+                            <p>No products in stock or match your search criteria.</p>
                         </div>
+                    <?php else: ?>
+                        <?php foreach ($products as $product): 
+                            // Calculate stock percentage
+                            $max_stock = max($product['max_stock'], 1);
+                            $stock_percentage = ($product['current_stock'] / $max_stock) * 100;
+                            $stock_class = $stock_percentage <= 20 ? 'stock-low' : 
+                                          ($stock_percentage <= 50 ? 'stock-medium' : 'stock-high');
+                            
+                            // Default image if none
+                            $image_url = $product['image_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($product['product_name']) . '&background=' . substr($product['color'] ?? '7C3AED', 1) . '&color=fff&size=256';
+                        ?>
+                            <div class="product-card" 
+                                 data-id="<?php echo $product['product_id']; ?>"
+                                 data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                                 data-price="<?php echo $product['unit_price']; ?>"
+                                 data-stock="<?php echo $product['current_stock']; ?>"
+                                 onclick="addToCart(<?php echo $product['product_id']; ?>)">
+                                
+                                <!-- Product Image -->
+                                <div class="product-image-container">
+                                    <?php if ($product['image_url']): ?>
+                                        <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
+                                             alt="<?php echo htmlspecialchars($product['product_name']); ?>" 
+                                             class="product-image"
+                                             onerror="this.src='https://ui-avatars.com/api/?name=<?php echo urlencode($product['product_name']); ?>&background=7C3AED&color=fff&size=256'">
+                                    <?php else: ?>
+                                        <div class="no-image">
+                                            <i class="fas fa-box"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- Product Header -->
+                                <div class="product-header">
+                                    <div class="product-meta">
+                                        <span class="product-code"><?php echo htmlspecialchars($product['product_code']); ?></span>
+                                        <span class="product-status status-active">
+                                            <i class="fas fa-circle"></i> In Stock
+                                        </span>
+                                    </div>
+                                    
+                                    <h3 class="product-name" title="<?php echo htmlspecialchars($product['product_name']); ?>">
+                                        <?php echo htmlspecialchars($product['product_name']); ?>
+                                    </h3>
+                                    
+                                    <?php if ($product['category']): ?>
+                                        <div class="category-badge" style="background: <?php echo $product['color'] ?? '#06B6D4'; ?>20; color: <?php echo $product['color'] ?? '#06B6D4'; ?>;">
+                                            <i class="fas fa-tag"></i>
+                                            <?php echo htmlspecialchars($product['category']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- Product Details -->
+                                <div class="product-details">
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <div class="detail-label">Current Stock</div>
+                                            <div class="detail-value">
+                                                <?php echo $product['current_stock']; ?> 
+                                                <small style="font-size: 0.7rem; color: #64748b;"><?php echo $product['unit_type']; ?></small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-item">
+                                            <div class="detail-label">Min Stock</div>
+                                            <div class="detail-value"><?php echo $product['min_stock']; ?></div>
+                                        </div>
+                                        
+                                        <div class="detail-item">
+                                            <div class="detail-label">Max Stock</div>
+                                            <div class="detail-value"><?php echo $product['max_stock']; ?></div>
+                                        </div>
+                                        
+                                        <div class="detail-item">
+                                            <div class="detail-label">Unit Type</div>
+                                            <div class="detail-value"><?php echo htmlspecialchars($product['unit_type']); ?></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Stock Indicator -->
+                                    <div class="stock-indicator">
+                                        <div class="stock-level <?php echo $stock_class; ?>" 
+                                             style="width: <?php echo min($stock_percentage, 100); ?>%"></div>
+                                    </div>
+                                    
+                                    <div class="stock-info">
+                                        <span>Stock Level</span>
+                                        <span><?php echo round($stock_percentage); ?>%</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Price & Add to Cart -->
+                                <div class="product-price-section">
+                                    <div class="price-label">Price per <?php echo $product['unit_type']; ?></div>
+                                    <div class="price-value">$<?php echo number_format($product['unit_price'], 2); ?></div>
+                                    
+                                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart(<?php echo $product['product_id']; ?>);">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -603,7 +1051,8 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         <div class="cart-container">
             <div class="section-title">
                 <i class="fas fa-shopping-cart"></i>
-                <span>Cart</span>
+                <span>Shopping Cart</span>
+                <span id="cartCount" style="margin-left: auto; font-size: 0.9rem; color: #64748b;">(0 items)</span>
             </div>
             
             <div id="cartItems">
@@ -615,7 +1064,9 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
             </div>
             
             <div id="cartContent" style="display: none;">
-                <div id="cartItemsList"></div>
+                <div class="cart-items-container" id="cartItemsList">
+                    <!-- Cart items will be inserted here by JavaScript -->
+                </div>
                 
                 <div class="cart-total">
                     <div class="total-row">
@@ -629,7 +1080,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
                     </div>
                     
                     <div class="total-row">
-                        <span>Tax:</span>
+                        <span>Tax (10%):</span>
                         <span id="tax">$0.00</span>
                     </div>
                     
@@ -666,7 +1117,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         const productCards = document.querySelectorAll('.product-card');
         productCards.forEach(card => {
             products.push({
-                id: card.dataset.id,
+                id: parseInt(card.dataset.id),
                 name: card.dataset.name,
                 price: parseFloat(card.dataset.price),
                 stock: parseInt(card.dataset.stock)
@@ -678,8 +1129,13 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
             const searchTerm = e.target.value.toLowerCase();
             productCards.forEach(card => {
                 const productName = card.dataset.name.toLowerCase();
-                if (productName.includes(searchTerm)) {
-                    card.style.display = 'block';
+                const productCode = card.querySelector('.product-code').textContent.toLowerCase();
+                const productDesc = card.querySelector('.product-description')?.textContent.toLowerCase() || '';
+                
+                if (productName.includes(searchTerm) || 
+                    productCode.includes(searchTerm) || 
+                    productDesc.includes(searchTerm)) {
+                    card.style.display = 'flex';
                 } else {
                     card.style.display = 'none';
                 }
@@ -704,97 +1160,118 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         document.getElementById('customerPhone').addEventListener('input', updateFormValues);
         document.getElementById('customerEmail').addEventListener('input', updateFormValues);
         document.getElementById('saleNotes').addEventListener('input', updateFormValues);
+        
+        // Load cart from localStorage if exists
+        const savedCart = localStorage.getItem('sale_cart');
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+            updateCartDisplay();
+        }
+        
+        // Check for add_product parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const addProductId = urlParams.get('add_product');
+        if (addProductId) {
+            addToCart(parseInt(addProductId));
+            // Remove parameter from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     });
     
     // Add product to cart
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.product-card')) {
-            const card = e.target.closest('.product-card');
-            const productId = parseInt(card.dataset.id);
-            
-            // Find product in products array
-            const product = products.find(p => p.id == productId);
-            if (!product) return;
-            
-            // Check if product already in cart
-            const existingItem = cart.find(item => item.product_id === productId);
-            
-            if (existingItem) {
-                if (existingItem.quantity < product.stock) {
-                    existingItem.quantity++;
-                } else {
-                    alert(`Only ${product.stock} items in stock!`);
-                    return;
-                }
+    window.addToCart = function(productId) {
+        // Find product in products array
+        const product = products.find(p => p.id === productId);
+        if (!product) {
+            alert('Product not found!');
+            return;
+        }
+        
+        // Check if product already in cart
+        const existingItem = cart.find(item => item.product_id === productId);
+        
+        if (existingItem) {
+            if (existingItem.quantity < product.stock) {
+                existingItem.quantity++;
             } else {
-                if (product.stock > 0) {
-                    cart.push({
-                        product_id: productId,
-                        name: product.name,
-                        unit_price: product.price,
-                        quantity: 1
-                    });
-                } else {
-                    alert('Product out of stock!');
-                    return;
-                }
+                alert(`Only ${product.stock} items in stock!`);
+                return;
             }
-            
-            updateCartDisplay();
-            card.classList.add('active');
-            setTimeout(() => card.classList.remove('active'), 500);
+        } else {
+            if (product.stock > 0) {
+                cart.push({
+                    product_id: productId,
+                    name: product.name,
+                    unit_price: product.price,
+                    quantity: 1
+                });
+            } else {
+                alert('Product out of stock!');
+                return;
+            }
         }
         
-        // Remove item from cart
-        if (e.target.classList.contains('remove-btn') || e.target.closest('.remove-btn')) {
-            const itemId = parseInt(e.target.closest('[data-item-id]').dataset.itemId);
-            cart = cart.filter(item => item.product_id !== itemId);
-            updateCartDisplay();
+        // Highlight product card
+        const productCard = document.querySelector(`.product-card[data-id="${productId}"]`);
+        if (productCard) {
+            productCard.classList.add('added');
+            setTimeout(() => productCard.classList.remove('added'), 1000);
         }
         
-        // Quantity buttons
-        if (e.target.classList.contains('quantity-btn')) {
-            const btn = e.target;
-            const itemId = parseInt(btn.closest('[data-item-id]').dataset.itemId);
-            const item = cart.find(item => item.product_id === itemId);
-            const product = products.find(p => p.id == itemId);
-            
-            if (!item || !product) return;
-            
-            if (btn.textContent === '+') {
-                if (item.quantity < product.stock) {
-                    item.quantity++;
-                } else {
-                    alert(`Only ${product.stock} items in stock!`);
-                }
-            } else if (btn.textContent === '-') {
-                if (item.quantity > 1) {
-                    item.quantity--;
-                } else {
-                    cart = cart.filter(i => i.product_id !== itemId);
-                }
-            }
-            
-            updateCartDisplay();
+        updateCartDisplay();
+        saveCartToStorage();
+    };
+    
+    // Remove item from cart
+    function removeFromCart(productId) {
+        cart = cart.filter(item => item.product_id !== productId);
+        updateCartDisplay();
+        saveCartToStorage();
+    }
+    
+    // Update quantity in cart
+    function updateQuantity(productId, change) {
+        const item = cart.find(item => item.product_id === productId);
+        const product = products.find(p => p.id === productId);
+        
+        if (!item || !product) return;
+        
+        const newQuantity = item.quantity + change;
+        
+        if (newQuantity < 1) {
+            removeFromCart(productId);
+            return;
         }
-    });
+        
+        if (newQuantity > product.stock) {
+            alert(`Only ${product.stock} items in stock!`);
+            return;
+        }
+        
+        item.quantity = newQuantity;
+        updateCartDisplay();
+        saveCartToStorage();
+    }
     
     function updateCartDisplay() {
         const cartItemsList = document.getElementById('cartItemsList');
         const emptyCart = document.getElementById('cartItems');
         const cartContent = document.getElementById('cartContent');
         const submitBtn = document.getElementById('submitBtn');
+        const cartCount = document.getElementById('cartCount');
         
         if (cart.length === 0) {
             emptyCart.style.display = 'block';
             cartContent.style.display = 'none';
             submitBtn.disabled = true;
+            cartCount.textContent = '(0 items)';
             return;
         }
         
         emptyCart.style.display = 'none';
         cartContent.style.display = 'block';
         submitBtn.disabled = false;
+        cartCount.textContent = `(${cart.reduce((total, item) => total + item.quantity, 0)} items)`;
         
         let html = '';
         let subtotal = 0;
@@ -810,10 +1287,12 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
                         <div class="cart-item-price">$${item.unit_price.toFixed(2)} each</div>
                     </div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn">-</button>
+                        <button class="quantity-btn" onclick="updateQuantity(${item.product_id}, -1)">-</button>
                         <span class="quantity-display">${item.quantity}</span>
-                        <button class="quantity-btn">+</button>
-                        <button class="remove-btn">Remove</button>
+                        <button class="quantity-btn" onclick="updateQuantity(${item.product_id}, 1)">+</button>
+                        <button class="remove-btn" onclick="removeFromCart(${item.product_id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -823,7 +1302,7 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         
         // Calculate totals
         const discount = 0; // Can be added later
-        const tax = subtotal * 0.1; // 10% tax (adjust as needed)
+        const tax = subtotal * 0.1; // 10% tax
         const grandTotal = subtotal - discount + tax;
         
         document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
@@ -845,6 +1324,17 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         document.getElementById('formCartItems').value = JSON.stringify(cart);
     }
     
+    function saveCartToStorage() {
+        localStorage.setItem('sale_cart', JSON.stringify(cart));
+    }
+    
+    // Clear cart after successful sale
+    function clearCart() {
+        cart = [];
+        localStorage.removeItem('sale_cart');
+        updateCartDisplay();
+    }
+    
     // Form submission
     document.getElementById('saleForm').addEventListener('submit', function(e) {
         if (cart.length === 0) {
@@ -862,6 +1352,20 @@ $categories = $pdo->query("SELECT * FROM EASYSALLES_CATEGORIES ORDER BY category
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         submitBtn.disabled = true;
+        
+        // Clear cart on successful submission
+        setTimeout(() => {
+            if (this.checkValidity()) {
+                clearCart();
+            }
+        }, 100);
+    });
+    
+    // Image error handling
+    document.querySelectorAll('.product-image').forEach(img => {
+        img.onerror = function() {
+            this.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt) + '&background=7C3AED&color=fff&size=256';
+        };
     });
 </script>
 
