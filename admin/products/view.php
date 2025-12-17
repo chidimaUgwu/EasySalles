@@ -497,6 +497,7 @@ try {
 </head>
 <body>
     <div class="container">
+        <div class="page-header">
             <div class="page-title">
                 <h2>Product Details</h2>
                 <p>View complete product information and history</p>
@@ -515,10 +516,6 @@ try {
         </div>
 
         <div class="main-content">
-            <div class="dashboard-row">
-                <div class="col-8">
-                    <!-- Product Information Card -->
-                    <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">
                                 📦 Product Information
