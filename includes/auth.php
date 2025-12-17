@@ -21,6 +21,15 @@ function require_admin() {
     }
 }
 
+function require_staff() {
+    require_login();
+    if (!is_staff()) {
+        header('Location: admin-dashboard.php');
+        exit();
+    }
+}
+
+
 // Function to require admin role
 // function require_admin() {
 //     require_login();
