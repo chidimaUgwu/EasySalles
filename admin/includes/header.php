@@ -839,7 +839,7 @@ if (!isset($page_title)) {
                     <i class="fas fa-box"></i>
                     <span>All Products</span>
                 </a>
-                <a href="<?php echo getAdminURL('products/categories.php'); ?>" class="menu-item <?php echo isActive('page', 'categories.php') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('products/categories.php'); ?>" class="menu-item <?php echo isActive('directory', 'categories.php') ? 'active' : ''; ?>">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
                 </a>
