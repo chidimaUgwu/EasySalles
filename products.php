@@ -910,15 +910,6 @@ foreach ($categories as $cat) {
                                 Cost: $<?php echo number_format($product['cost_price'], 2); ?>
                             </div>
                         <?php endif; ?>
-                        
-                        <div class="product-actions">
-                            <button class="action-btn add-to-cart-btn" onclick="addToCart(<?php echo $product['product_id']; ?>)">
-                                <i class="fas fa-cart-plus"></i> Add to Cart
-                            </button>  
-                            <button class="action-btn view-details-btn" onclick="viewProductDetails(<?php echo $product['product_id']; ?>)">
-                                <i class="fas fa-eye"></i> View Details
-                            </button>
-                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
