@@ -53,12 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->beginTransaction();
     
     try {
-        // Insert sale record
+        // Insert sale record - CORRECTED VERSION
         $sql = "INSERT INTO EASYSALLES_SALES 
                 (transaction_code, customer_name, customer_phone, customer_email, 
-                 subtotal_amount, discount_amount, tax_amount, total_amount, 
-                 payment_method, staff_id, notes, sale_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')";
+                 subtotal_amount, discount_amount, tax_amount, total_amount, final_amount,
+                 payment_method, payment_status, staff_id, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?)";
         
         $stmt = $pdo->prepare($sql);
         
@@ -67,10 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $customer_name, 
             $customer_phone, 
             $customer_email,
-            $subtotal,
+            $subtotal, // subtotal_amount
             $discount_amount,
             $tax_amount,
-            $total_amount,
+            $subtotal, // total_amount = subtotal (before tax)
+            $total_amount, // final_amount = total after tax
             $payment_method,
             $_SESSION['user_id'],
             $notes
@@ -125,21 +126,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        
         $pdo->commit();
-        $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
-        $show_receipt = true;
-        $receipt_data = [
-            'transaction_code' => $transaction_code,
-            'customer_name' => $customer_name,
-            'items' => $cart_items,
-            'subtotal' => $subtotal,
-            'discount' => $discount_amount,
-            'tax' => $tax_amount,
-            'total' => $total_amount,
-            'payment_method' => $payment_method,
-            'notes' => $notes
-        ];
+        
+        // Clear cart after successful sale
+        $_SESSION['cart'] = [];
+        unset($_SESSION['sale_cart']);
+        
+        // Set success message - cleaned up version
+        $success_message = "Sale completed successfully!<br><strong>Transaction:</strong> $transaction_code<br><strong>Total:</strong> $" . number_format($total_amount, 2);
+        
+        // Redirect to sales page after 3 seconds
+        header("refresh:3;url=sales.php");
         
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -247,6 +244,62 @@ foreach ($categories as $cat) {
     
     .section-title i {
         color: var(--primary);
+    }
+    
+    /* Alert Styles - Cleaner */
+    .alert {
+        padding: 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+        color: #065f46;
+        border: 1px solid #10B981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+    
+    .alert-error {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+        color: #7f1d1d;
+        border: 1px solid #EF4444;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    }
+    
+    .alert i {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .alert-content {
+        flex-grow: 1;
+    }
+    
+    .alert-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .alert-message {
+        font-size: 0.95rem;
+        opacity: 0.9;
     }
     
     /* Product Grid Styles - Compact Version */
@@ -798,11 +851,22 @@ foreach ($categories as $cat) {
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
     
     .btn-complete:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-complete:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
     
     .btn-clear {
@@ -814,6 +878,10 @@ foreach ($categories as $cat) {
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
     
     .btn-clear:hover {
@@ -850,6 +918,10 @@ foreach ($categories as $cat) {
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
     
     .btn-quick-add:hover {
@@ -931,25 +1003,6 @@ foreach ($categories as $cat) {
         color: var(--border);
     }
     
-    .alert {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        border-left: 4px solid;
-    }
-    
-    .alert-success {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
-        color: #10B981;
-        border-left-color: #10B981;
-    }
-    
-    .alert-error {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-        color: #EF4444;
-        border-left-color: #EF4444;
-    }
-    
     .product-meta {
         display: flex;
         justify-content: space-between;
@@ -1002,15 +1055,23 @@ foreach ($categories as $cat) {
         </h1>
     </div>
     
-    <?php if (isset($success)): ?>
+    <?php if (isset($success_message)): ?>
         <div class="alert alert-success">
-            <i class="fas fa-check-circle"></i> <?php echo $success; ?>
+            <i class="fas fa-check-circle"></i>
+            <div class="alert-content">
+                <div class="alert-title">Sale Completed Successfully!</div>
+                <div class="alert-message"><?php echo $success_message; ?><br><small>Redirecting to sales page in 3 seconds...</small></div>
+            </div>
         </div>
     <?php endif; ?>
     
     <?php if (isset($error)): ?>
         <div class="alert alert-error">
-            <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+            <i class="fas fa-exclamation-circle"></i>
+            <div class="alert-content">
+                <div class="alert-title">Error</div>
+                <div class="alert-message"><?php echo $error; ?></div>
+            </div>
         </div>
     <?php endif; ?>
     
@@ -1345,7 +1406,6 @@ foreach ($categories as $cat) {
 <script>
     let cart = [];
     let products = [];
-    let transactionCode = 'TXN-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
     // Load products from server
     document.addEventListener('DOMContentLoaded', function() {
@@ -1418,12 +1478,19 @@ foreach ($categories as $cat) {
             }
             
             // Show loading state
+            const originalText = this.innerHTML;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             this.disabled = true;
             
             // Update form values and submit
             updateFormValues();
             document.getElementById('saleForm').submit();
+            
+            // Reset button state after 3 seconds (in case form doesn't submit)
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }, 3000);
         });
         
         // Print receipt button
@@ -1636,6 +1703,12 @@ foreach ($categories as $cat) {
         document.getElementById('receiptPreview').style.display = 'block';
         document.getElementById('printReceiptBtn').style.display = 'block';
         
+        // Generate transaction code for receipt preview
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0,10).replace(/-/g, '');
+        const randomCode = Math.random().toString(36).substr(2, 6).toUpperCase();
+        const transactionCode = 'TXN-' + dateStr + '-' + randomCode;
+        
         // Update transaction code
         document.getElementById('receiptTransaction').textContent = `Transaction: ${transactionCode}`;
         
@@ -1743,23 +1816,5 @@ foreach ($categories as $cat) {
         };
     });
 </script>
-
-<?php
-// Display receipt after successful sale
-if (isset($show_receipt) && $show_receipt && isset($receipt_data)):
-?>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Clear cart after successful sale
-        clearCart();
-        
-        // Show success receipt
-        alert('Sale completed successfully!\nTransaction: <?php echo $receipt_data['transaction_code']; ?>\nTotal: $<?php echo number_format($receipt_data['total'], 2); ?>');
-        
-        // You can add code here to automatically print receipt if needed
-        // printReceipt();
-    });
-</script>
-<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
