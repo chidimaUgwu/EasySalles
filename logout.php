@@ -2,6 +2,12 @@
 // logout.php - Logout with confirmation page
 session_start();
 
+session_start();
+
+if (!isset($_SESSION['previous_page']) && isset($_SERVER['HTTP_REFERER'])) {
+    $_SESSION['previous_page'] = $_SERVER['HTTP_REFERER'];
+}
+
 // Prevent caching of logout page
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -372,7 +378,7 @@ if (!isset($_SESSION['user_id'])) {
                         <i class="fas fa-times"></i> No, Go Back to Admin
                     </a>
                 <?php else: ?>
-                    <a href="dashboard.php" class="btn btn-cancel">
+                    <a href="staf-dashboard.php" class="btn btn-cancel">
                         <i class="fas fa-times"></i> No, Go Back
                     </a>
                 <?php endif; ?>
