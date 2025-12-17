@@ -427,7 +427,6 @@ if (session_status() === PHP_SESSION_NONE) {
                         <span>PRODUCTS</span>
                     </a>
 
-                    // Inside the navigation, add:
                     <li class="header-cart">
                         <a href="sale-record.php" class="cart-icon">
                             <i class="fas fa-shopping-cart"></i>
