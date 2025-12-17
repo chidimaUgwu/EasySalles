@@ -8,7 +8,7 @@ require 'includes/auth.php';
 require_login();
 require_staff();
 
-header("refresh:3;url=sales-list.php");
+// header("refresh:3;url=sales-list.php");
 require 'includes/header.php';
 
 $page_title = 'Record New Sale';
