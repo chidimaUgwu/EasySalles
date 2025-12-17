@@ -823,9 +823,13 @@ if (!isset($page_title)) {
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
                 </a>
-                <a href="<?php echo getAdminURL('shifts/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'shifts') ? 'active' : ''; ?>">
+                <a href="<?php echo getAdminURL('schedule/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'schedule') ? 'active' : ''; ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Shift Schedule</span>
+                </a>
+                <a href="<?php echo getAdminURL('attendance/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'attendance') ? 'active' : ''; ?>">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Staff attendance</span>
                 </a>
             </div>
             
