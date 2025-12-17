@@ -378,7 +378,7 @@ if (!isset($_SESSION['user_id'])) {
                         <i class="fas fa-times"></i> No, Go Back to Admin
                     </a>
                 <?php else: ?>
-                    <a href="staf-dashboard.php" class="btn btn-cancel">
+                    <a href="staff-dashboard.php" class="btn btn-cancel">
                         <i class="fas fa-times"></i> No, Go Back
                     </a>
                 <?php endif; ?>
