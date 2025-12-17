@@ -401,23 +401,7 @@ try {
             margin-top: 2rem;
             width: 100%;
         }
-
-
-        .three-div-row {
-            display: grid;
-            grid-template-columns: 2fr 2fr 1fr; /* left bigger, right smaller */
-            gap: 2rem;                          /* SPACE between divs */
-            align-items: start;
-            margin-top: 2rem;
-        }
-
-        .card {
-            padding: 1.5rem;
-            border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-        }
-
+        
         .price-stat-box {
             text-align: center;
             padding: 1rem;
@@ -531,7 +515,7 @@ try {
             </div>
         </div>
 
-        <div class="page-header">
+        <div class="main-content">
             <div class="dashboard-row">
                 <div class="col-8">
                     <!-- Product Information Card -->
@@ -713,7 +697,7 @@ try {
                     <?php endif; ?>
                 </div>
                 
-                <div class="three-div-row">
+                <div class="col-4">
                     <!-- Quick Stats -->
                     <div class="card">
                         <div class="card-header">
