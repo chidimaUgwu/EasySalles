@@ -871,17 +871,6 @@ foreach ($categories as $cat) {
                                     <small style="font-size: 0.8rem; color: #64748b;"><?php echo $product['unit_type']; ?></small>
                                 </div>
                             </div>
-                            
-                            <div class="detail-item">
-                                <div class="detail-label">Min Stock</div>
-                                <div class="detail-value"><?php echo $product['min_stock']; ?></div>
-                            </div>
-                            
-                            <div class="detail-item">
-                                <div class="detail-label">Max Stock</div>
-                                <div class="detail-value"><?php echo $product['max_stock']; ?></div>
-                            </div>
-                            
                             <div class="detail-item">
                                 <div class="detail-label">Unit Type</div>
                                 <div class="detail-value"><?php echo htmlspecialchars($product['unit_type']); ?></div>
