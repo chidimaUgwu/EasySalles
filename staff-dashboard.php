@@ -15,7 +15,7 @@ require 'includes/auth.php';
 require_login();
 
 // Redirect admin to admin dashboard
-if (is_admin()) {
+if (isset($_SESSION['role']) && $_SESSION['role'] == 1) {
     header('Location: admin-dashboard.php');
     exit();
 }
