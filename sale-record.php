@@ -8,8 +8,10 @@ require 'includes/auth.php';
 require_login();
 require_staff();
 
+header("refresh:3;url=sales.php");
+require 'includes/header.php';
+
 $page_title = 'Record New Sale';
-include 'includes/header.php';
 require 'config/db.php';
 
 // Initialize cart from session
@@ -134,9 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Set success message - cleaned up version
         $success_message = "Sale completed successfully!<br><strong>Transaction:</strong> $transaction_code<br><strong>Total:</strong> $" . number_format($total_amount, 2);
-        
-        // Redirect to sales page after 3 seconds
-        header("refresh:3;url=sales.php");
         
     } catch (Exception $e) {
         $pdo->rollBack();
