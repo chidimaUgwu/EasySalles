@@ -426,6 +426,14 @@ if (session_status() === PHP_SESSION_NONE) {
                         <i class="fas fa-box"></i>
                         <span>PRODUCTS</span>
                     </a>
+
+                    // Inside the navigation, add:
+                    <li class="header-cart">
+                        <a href="sale-record.php" class="cart-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count"></span>
+                        </a>
+                    </li>
                     
                     <?php if ($_SESSION['role'] == 1): ?>
                         <a href="staff-manage.php" 

@@ -12,6 +12,13 @@ $page_title = 'Record New Sale';
 include 'includes/header.php';
 require 'config/db.php';
 
+// Initialize cart from session
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+$cart_items = $_SESSION['cart'];
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customer_name = $_POST['customer_name'] ?? 'Walk-in Customer';
@@ -118,26 +125,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        $pdo->commit();
-        $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
-        $show_receipt = true;
-        $receipt_data = [
-            'transaction_code' => $transaction_code,
-            'customer_name' => $customer_name,
-            'items' => $cart_items,
-            'subtotal' => $subtotal,
-            'discount' => $discount_amount,
-            'tax' => $tax_amount,
-            'total' => $total_amount,
-            'payment_method' => $payment_method,
-            'notes' => $notes
-        ];
-        
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        $error = "Failed to record sale: " . $e->getMessage();
+        if ($pdo->commit()) 
+            {
+                $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
+                $show_receipt = true;
+                $receipt_data = [
+                        'transaction_code' => $transaction_code,
+                        'customer_name' => $customer_name,
+                        'items' => $cart_items,
+                        'subtotal' => $subtotal,
+                        'discount' => $discount_amount,
+                        'tax' => $tax_amount,
+                        'total' => $total_amount,
+                        'payment_method' => $payment_method,
+                        'notes' => $notes
+                    ];
+                } 
+                catch (Exception $e) 
+                {
+                $pdo->rollBack();
+                $error = "Failed to record sale: " . $e->getMessage();
+            }
+
+                // Clear cart after successful sale
+                $_SESSION['cart'] = [];
+                
+                // Clear localStorage if exists
+                echo '<script>localStorage.removeItem("sale_cart");</script>';
+            }
+
     }
-}
 
 // Get filter parameters
 $category = $_GET['category'] ?? '';
@@ -1335,7 +1352,9 @@ foreach ($categories as $cat) {
 </div>
 
 <script>
-    let cart = [];
+    // Instead of loading from localStorage, initialize from session
+    let cart = <?php echo json_encode($cart_items); ?>;
+    // let cart = [];
     let products = [];
     let transactionCode = 'TXN-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
