@@ -424,7 +424,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     <a href="products.php" 
                        class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">
                         <i class="fas fa-box"></i>
-                        <span>PRODUCTS</span>
+                        <span>Products</span>
                     </a>
                     
                     
