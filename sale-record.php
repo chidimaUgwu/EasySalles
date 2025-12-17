@@ -125,36 +125,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        if ($pdo->commit()) 
-            {
-                $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
-                $show_receipt = true;
-                $receipt_data = [
-                        'transaction_code' => $transaction_code,
-                        'customer_name' => $customer_name,
-                        'items' => $cart_items,
-                        'subtotal' => $subtotal,
-                        'discount' => $discount_amount,
-                        'tax' => $tax_amount,
-                        'total' => $total_amount,
-                        'payment_method' => $payment_method,
-                        'notes' => $notes
-                    ];
-                } 
-                catch (Exception $e) 
-                {
-                $pdo->rollBack();
-                $error = "Failed to record sale: " . $e->getMessage();
-            }
-
-                // Clear cart after successful sale
-                $_SESSION['cart'] = [];
-                
-                // Clear localStorage if exists
-                echo '<script>localStorage.removeItem("sale_cart");</script>';
-            }
-
+        $pdo->commit();
+        
+        $success = "Sale recorded successfully! Transaction Code: " . $transaction_code;
+        $show_receipt = true;
+        $receipt_data = [
+            'transaction_code' => $transaction_code,
+            'customer_name' => $customer_name,
+            'items' => $cart_items,
+            'subtotal' => $subtotal,
+            'discount' => $discount_amount,
+            'tax' => $tax_amount,
+            'total' => $total_amount,
+            'payment_method' => $payment_method,
+            'notes' => $notes
+        ];
+        
+        // Clear cart after successful sale
+        $_SESSION['cart'] = [];
+        
+        // Clear localStorage if exists
+        echo '<script>localStorage.removeItem("sale_cart");</script>';
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $error = "Failed to record sale: " . $e->getMessage();
     }
+}
 
 // Get filter parameters
 $category = $_GET['category'] ?? '';
@@ -1002,6 +999,94 @@ foreach ($categories as $cat) {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
     }
+    
+    /* Notification styles */
+    .cart-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 9999;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+        max-width: 400px;
+        border-left: 4px solid;
+    }
+    
+    .cart-notification.show {
+        transform: translateX(0);
+    }
+    
+    .cart-notification-success {
+        border-left-color: #10B981;
+        background: linear-gradient(135deg, #10B98110, #10B98105);
+    }
+    
+    .cart-notification-error {
+        border-left-color: #EF4444;
+        background: linear-gradient(135deg, #EF444410, #EF444405);
+    }
+    
+    .cart-notification i {
+        font-size: 1.5rem;
+    }
+    
+    .cart-notification-success i {
+        color: #10B981;
+    }
+    
+    .cart-notification-error i {
+        color: #EF4444;
+    }
+    
+    .cart-notification span {
+        flex: 1;
+        font-weight: 500;
+        color: var(--text);
+    }
+    
+    .view-cart-btn {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .view-cart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+    }
+    
+    .close-notification {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #64748b;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    
+    .close-notification:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text);
+    }
 </style>
 
 <div class="sale-record-container">
@@ -1009,6 +1094,9 @@ foreach ($categories as $cat) {
         <h1 class="page-title">
             <i class="fas fa-cash-register"></i> Record New Sale
         </h1>
+        <a href="products.php" class="filter-btn" style="text-decoration: none;">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
     </div>
     
     <?php if (isset($success)): ?>
@@ -1354,12 +1442,14 @@ foreach ($categories as $cat) {
 <script>
     // Instead of loading from localStorage, initialize from session
     let cart = <?php echo json_encode($cart_items); ?>;
-    // let cart = [];
     let products = [];
     let transactionCode = 'TXN-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
     
     // Load products from server
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize cart display
+        updateCartDisplay();
+        
         // Get products data from PHP
         const productCards = document.querySelectorAll('.product-card');
         productCards.forEach(card => {
@@ -1378,11 +1468,9 @@ foreach ($categories as $cat) {
             productCards.forEach(card => {
                 const productName = card.dataset.name.toLowerCase();
                 const productCode = card.dataset.code.toLowerCase();
-                const productDesc = card.querySelector('.product-description')?.textContent.toLowerCase() || '';
                 
                 if (productName.includes(searchTerm) || 
-                    productCode.includes(searchTerm) || 
-                    productDesc.includes(searchTerm)) {
+                    productCode.includes(searchTerm)) {
                     card.style.display = 'flex';
                 } else {
                     card.style.display = 'none';
@@ -1448,6 +1536,9 @@ foreach ($categories as $cat) {
                 quickAddToCart();
             }
         });
+        
+        // Update cart count in header
+        updateHeaderCartCount();
     });
     
     // Add product to cart
@@ -1455,7 +1546,7 @@ foreach ($categories as $cat) {
         // Find product in products array
         const product = products.find(p => p.id === productId);
         if (!product) {
-            alert('Product not found!');
+            showNotification('error', 'Product not found!');
             return;
         }
         
@@ -1466,7 +1557,7 @@ foreach ($categories as $cat) {
             if (existingItem.quantity < product.stock) {
                 existingItem.quantity++;
             } else {
-                alert(`Only ${product.stock} items in stock!`);
+                showNotification('error', `Only ${product.stock} items in stock!`);
                 return;
             }
         } else {
@@ -1479,7 +1570,7 @@ foreach ($categories as $cat) {
                     quantity: 1
                 });
             } else {
-                alert('Product out of stock!');
+                showNotification('error', 'Product out of stock!');
                 return;
             }
         }
@@ -1492,9 +1583,72 @@ foreach ($categories as $cat) {
         }
         
         updateCartDisplay();
-        saveCartToStorage();
+        saveCartToSession(productId);
         updateReceiptPreview();
+        showNotification('success', 'Added to cart!');
     };
+    
+    // Save cart to session via AJAX
+    function saveCartToSession(productId) {
+        fetch('ajax/add_to_cart.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `product_id=${productId}&quantity=1`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateHeaderCartCount();
+            }
+        })
+        .catch(error => {
+            console.error('Error saving cart:', error);
+        });
+    }
+    
+    // Update cart count in header
+    function updateHeaderCartCount() {
+        const cartCount = document.querySelector('.cart-count');
+        if (cartCount) {
+            const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+            cartCount.textContent = totalItems > 0 ? `(${totalItems} items)` : '(0 items)';
+        }
+    }
+    
+    // Show notification
+    function showNotification(type, message) {
+        // Remove existing notifications
+        const existing = document.querySelector('.cart-notification');
+        if (existing) existing.remove();
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.className = `cart-notification cart-notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${message}</span>
+            <button class="close-notification">&times;</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+        
+        // Close button
+        notification.querySelector('.close-notification').onclick = () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        };
+    }
     
     // Quick add to cart by product code
     function quickAddToCart() {
@@ -1502,7 +1656,7 @@ foreach ($categories as $cat) {
         const searchTerm = input.value.trim().toLowerCase();
         
         if (!searchTerm) {
-            alert('Please enter a product code or name');
+            showNotification('error', 'Please enter a product code or name');
             return;
         }
         
@@ -1513,7 +1667,7 @@ foreach ($categories as $cat) {
         );
         
         if (!product) {
-            alert('Product not found!');
+            showNotification('error', 'Product not found!');
             return;
         }
         
@@ -1528,6 +1682,16 @@ foreach ($categories as $cat) {
         updateCartDisplay();
         saveCartToStorage();
         updateReceiptPreview();
+        updateHeaderCartCount();
+        
+        // Remove from session via AJAX
+        fetch('ajax/remove_from_cart.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `product_id=${productId}`
+        });
     }
     
     // Update quantity in cart
@@ -1545,7 +1709,7 @@ foreach ($categories as $cat) {
         }
         
         if (newQuantity > product.stock) {
-            alert(`Only ${product.stock} items in stock!`);
+            showNotification('error', `Only ${product.stock} items in stock!`);
             return;
         }
         
@@ -1553,6 +1717,16 @@ foreach ($categories as $cat) {
         updateCartDisplay();
         saveCartToStorage();
         updateReceiptPreview();
+        updateHeaderCartCount();
+        
+        // Update session via AJAX
+        fetch('ajax/update_cart_quantity.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `product_id=${productId}&quantity=${newQuantity}`
+        });
     }
     
     function updateCartDisplay() {
@@ -1567,6 +1741,7 @@ foreach ($categories as $cat) {
             cartContent.style.display = 'none';
             completeBtn.disabled = true;
             cartCount.textContent = '(0 items)';
+            updateHeaderCartCount();
             return;
         }
         
@@ -1576,6 +1751,7 @@ foreach ($categories as $cat) {
         
         const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
         cartCount.textContent = `(${totalItems} items)`;
+        updateHeaderCartCount();
         
         let html = '';
         
@@ -1706,6 +1882,10 @@ foreach ($categories as $cat) {
             localStorage.removeItem('sale_cart');
             updateCartDisplay();
             updateReceiptPreview();
+            updateHeaderCartCount();
+            
+            // Clear session cart via AJAX
+            fetch('ajax/clear_cart.php');
         }
     };
     
@@ -1762,7 +1942,10 @@ if (isset($show_receipt) && $show_receipt && isset($receipt_data)):
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Clear cart after successful sale
-        clearCart();
+        cart = [];
+        localStorage.removeItem('sale_cart');
+        updateCartDisplay();
+        updateHeaderCartCount();
         
         // Show success receipt
         alert('Sale completed successfully!\nTransaction: <?php echo $receipt_data['transaction_code']; ?>\nTotal: $<?php echo number_format($receipt_data['total'], 2); ?>');
