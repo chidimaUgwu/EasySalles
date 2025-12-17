@@ -1,4 +1,5 @@
 <?php
+// staff-dashboard.php
 
 // Turn on full error reporting for debugging
 ini_set('display_errors', 1);
@@ -7,6 +8,12 @@ error_reporting(E_ALL);
 
 require 'includes/auth.php';
 require_login();
+
+// Redirect admin to admin dashboard
+if (is_admin()) {
+    header('Location: admin-dashboard.php');
+    exit();
+}
 
 $page_title = 'Staff Dashboard';
 include 'includes/header.php';
@@ -18,10 +25,11 @@ require 'includes/db.php';
 $user_id = $_SESSION['user_id'];
 $today = date('Y-m-d');
 
+// Get today's sales stats using your table structure
 $sql = "SELECT COUNT(*) as total_sales, 
-               SUM(total_amount) as total_revenue,
-               AVG(total_amount) as avg_sale
-        FROM sales 
+               SUM(final_amount) as total_revenue,
+               AVG(final_amount) as avg_sale
+        FROM EASYSALLES_SALES 
         WHERE staff_id = ? AND DATE(sale_date) = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$user_id, $today]);
@@ -31,8 +39,8 @@ $today_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 $week_start = date('Y-m-d', strtotime('-6 days'));
 $sql_week = "SELECT DATE(sale_date) as date, 
                     COUNT(*) as sales_count,
-                    SUM(total_amount) as daily_revenue
-             FROM sales 
+                    SUM(final_amount) as daily_revenue
+             FROM EASYSALLES_SALES 
              WHERE staff_id = ? AND sale_date >= ?
              GROUP BY DATE(sale_date)
              ORDER BY date ASC";
@@ -40,10 +48,11 @@ $stmt_week = $pdo->prepare($sql_week);
 $stmt_week->execute([$user_id, $week_start]);
 $weekly_data = $stmt_week->fetchAll(PDO::FETCH_ASSOC);
 
-// Get recent sales
-$sql_recent = "SELECT s.*, p.name as product_name 
-               FROM sales s
-               LEFT JOIN products p ON s.product_id = p.id
+// Get recent sales with product names
+$sql_recent = "SELECT s.*, si.quantity, p.product_name 
+               FROM EASYSALLES_SALES s
+               JOIN EASYSALLES_SALE_ITEMS si ON s.sale_id = si.sale_id
+               JOIN EASYSALLES_PRODUCTS p ON si.product_id = p.product_id
                WHERE s.staff_id = ?
                ORDER BY s.sale_date DESC 
                LIMIT 5";
@@ -440,22 +449,6 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
         line-height: 1.7;
     }
     
-    /* Animations */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .stat-card, .action-card, .chart-container, .recent-activity {
-        animation: fadeInUp 0.6s ease-out;
-    }
-    
     /* Responsive Design */
     @media (max-width: 768px) {
         .dashboard {
@@ -500,7 +493,7 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
     <div class="dashboard-header">
         <div class="welcome-section">
             <div class="welcome-text">
-                <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
+                <h1 id="greeting">Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋</h1>
                 <p>Here's your sales performance overview for today. Ready to make more sales?</p>
             </div>
             <div class="current-time">
@@ -652,7 +645,7 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
                             </div>
                             <div class="sale-amount">
-                                $<?php echo number_format($sale['total_amount'], 2); ?>
+                                $<?php echo number_format($sale['final_amount'], 2); ?>
                             </div>
                         </li>
                     <?php endforeach; ?>
@@ -699,7 +692,7 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
                 
                 <div class="performance-stat">
                     <div class="performance-stat-value">
-                        <?php echo $week_total > 0 ? round($week_revenue / $week_total, 2) : '0.00'; ?>
+                        $<?php echo $week_total > 0 ? number_format($week_revenue / $week_total, 2) : '0.00'; ?>
                     </div>
                     <div class="performance-stat-label">Avg per Sale</div>
                 </div>
@@ -740,78 +733,6 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
     // Update time every second
     setInterval(updateTime, 1000);
     
-    // Animate stat cards on scroll
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.animationDelay = '0s';
-                entry.target.style.animationPlayState = 'running';
-            }
-        });
-    }, observerOptions);
-    
-    // Observe all animated elements
-    document.querySelectorAll('.stat-card, .action-card, .chart-container, .recent-activity, .performance-summary, .daily-tip').forEach(element => {
-        element.style.animationPlayState = 'paused';
-        observer.observe(element);
-    });
-    
-    // Add hover effect to stat cards
-    document.querySelectorAll('.stat-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            const icon = this.querySelector('.stat-icon');
-            icon.style.transform = 'scale(1.1) rotate(5deg)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            const icon = this.querySelector('.stat-icon');
-            icon.style.transform = 'scale(1) rotate(0deg)';
-        });
-    });
-    
-    // Quick action card effects
-    document.querySelectorAll('.action-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            const icon = this.querySelector('.action-icon');
-            icon.style.transform = 'translateY(-10px) scale(1.1)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            const icon = this.querySelector('.action-icon');
-            icon.style.transform = 'translateY(0) scale(1)';
-        });
-    });
-    
-    // Sales item hover effect
-    document.querySelectorAll('.sale-item').forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.boxShadow = '0 8px 25px rgba(124, 58, 237, 0.1)';
-        });
-        
-        item.addEventListener('mouseleave', function() {
-            this.style.boxShadow = 'none';
-        });
-    });
-    
-    // Performance summary animation
-    const performanceSummary = document.querySelector('.performance-summary');
-    window.addEventListener('scroll', function() {
-        const rect = performanceSummary.getBoundingClientRect();
-        const isVisible = (rect.top >= 0) && (rect.bottom <= window.innerHeight);
-        
-        if (isVisible) {
-            performanceSummary.style.transform = 'scale(1.02)';
-            setTimeout(() => {
-                performanceSummary.style.transform = 'scale(1)';
-            }, 300);
-        }
-    });
-    
     // Display greeting based on time of day
     document.addEventListener('DOMContentLoaded', function() {
         const hour = new Date().getHours();
@@ -821,10 +742,46 @@ $recent_sales = $stmt_recent->fetchAll(PDO::FETCH_ASSOC);
         else if (hour < 18) greeting = 'Good afternoon';
         else greeting = 'Good evening';
         
-        const welcomeTitle = document.querySelector('.welcome-text h1');
-        if (welcomeTitle) {
-            welcomeTitle.innerHTML = `${greeting}, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋`;
+        const greetingElement = document.getElementById('greeting');
+        if (greetingElement) {
+            greetingElement.innerHTML = `${greeting}, <?php echo htmlspecialchars($_SESSION['username']); ?>! 👋`;
         }
+    });
+    
+    // Add hover effect to stat cards
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('.stat-icon');
+            if (icon) {
+                icon.style.transform = 'scale(1.1) rotate(5deg)';
+                icon.style.transition = 'transform 0.3s ease';
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            const icon = this.querySelector('.stat-icon');
+            if (icon) {
+                icon.style.transform = 'scale(1) rotate(0deg)';
+            }
+        });
+    });
+    
+    // Quick action card effects
+    document.querySelectorAll('.action-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('.action-icon');
+            if (icon) {
+                icon.style.transform = 'translateY(-10px) scale(1.1)';
+                icon.style.transition = 'transform 0.3s ease';
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            const icon = this.querySelector('.action-icon');
+            if (icon) {
+                icon.style.transform = 'translateY(0) scale(1)';
+            }
+        });
     });
 </script>
 
