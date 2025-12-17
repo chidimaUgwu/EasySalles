@@ -8,6 +8,11 @@ function require_login() {
         exit();
     }
 }
+
+function is_staff() {
+    return isset($_SESSION['role']) && $_SESSION['role'] == 2;
+}
+
 // if (session_status() === PHP_SESSION_NONE) {
 //     session_start();
 // }
