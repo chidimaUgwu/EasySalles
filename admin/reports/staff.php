@@ -144,9 +144,6 @@ unset($staff); // Break reference
         box-sizing: border-box;
     }
     
-    body {
-        overflow-x: hidden;
-    }
     
     .dashboard-container {
         width: 70%;
