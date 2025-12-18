@@ -12,47 +12,51 @@ require_once ROOT_PATH . 'admin/includes/header.php';
 // Handle request approval/rejection
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['approve_request'])) {
-        $request_id = $_POST['request_id'];
-        $admin_notes = $_POST['admin_notes'];
+        $request_id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+        $admin_notes = filter_input(INPUT_POST, 'admin_notes', FILTER_SANITIZE_STRING);
         
-        // Get request details
-        $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_SHIFT_REQUESTS WHERE request_id = ?");
-        $stmt->execute([$request_id]);
-        $request = $stmt->fetch();
+        if ($request_id) {
+            // Get request details
+            $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_SHIFT_REQUESTS WHERE request_id = ?");
+            $stmt->execute([$request_id]);
+            $request = $stmt->fetch();
+            
+            if ($request) {
+                // Update request status
+                $stmt = $pdo->prepare("UPDATE EASYSALLES_SHIFT_REQUESTS 
+                                      SET status = 'approved', 
+                                          admin_notes = ?,
+                                          approved_by = ?,
+                                          approved_at = NOW()
+                                      WHERE request_id = ?");
+                $stmt->execute([$admin_notes, $_SESSION['user_id'], $request_id]);
+                
+                // Handle based on request type
+                if ($request['request_type'] === 'swap' && $request['requested_shift_id']) {
+                    // Implement shift swap logic
+                    // This would update the user's shift assignment
+                }
+                
+                $_SESSION['success'] = "Request approved successfully!";
+            }
+        }
+    }
+    
+    if (isset($_POST['reject_request'])) {
+        $request_id = filter_input(INPUT_POST, 'request_id', FILTER_VALIDATE_INT);
+        $admin_notes = filter_input(INPUT_POST, 'admin_notes', FILTER_SANITIZE_STRING);
         
-        if ($request) {
-            // Update request status
+        if ($request_id) {
             $stmt = $pdo->prepare("UPDATE EASYSALLES_SHIFT_REQUESTS 
-                                  SET status = 'approved', 
+                                  SET status = 'rejected', 
                                       admin_notes = ?,
                                       approved_by = ?,
                                       approved_at = NOW()
                                   WHERE request_id = ?");
             $stmt->execute([$admin_notes, $_SESSION['user_id'], $request_id]);
             
-            // Handle based on request type
-            if ($request['request_type'] === 'swap' && $request['requested_shift_id']) {
-                // Implement shift swap logic
-                // This would update the user's shift assignment
-            }
-            
-            $_SESSION['success'] = "Request approved successfully!";
+            $_SESSION['success'] = "Request rejected!";
         }
-    }
-    
-    if (isset($_POST['reject_request'])) {
-        $request_id = $_POST['request_id'];
-        $admin_notes = $_POST['admin_notes'];
-        
-        $stmt = $pdo->prepare("UPDATE EASYSALLES_SHIFT_REQUESTS 
-                              SET status = 'rejected', 
-                                  admin_notes = ?,
-                                  approved_by = ?,
-                                  approved_at = NOW()
-                              WHERE request_id = ?");
-        $stmt->execute([$admin_notes, $_SESSION['user_id'], $request_id]);
-        
-        $_SESSION['success'] = "Request rejected!";
     }
     
     // JavaScript redirect to avoid header issues
@@ -62,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get pending requests
 $stmt = $pdo->query("SELECT r.*, 
+                    COALESCE(u.full_name, u.username) as requester_display_name,
                     u.full_name as requester_name, 
                     u.username as requester_username,
                     s.shift_name,
@@ -81,13 +86,15 @@ $pending_requests = $stmt->fetchAll();
 
 // Get recent decisions
 $stmt = $pdo->query("SELECT r.*, 
+                    COALESCE(u.full_name, u.username) as requester_display_name,
                     u.full_name as requester_name,
+                    u.username as requester_username,
                     s.shift_name
                     FROM EASYSALLES_SHIFT_REQUESTS r
                     LEFT JOIN EASYSALLES_USERS u ON r.user_id = u.user_id
                     LEFT JOIN EASYSALLES_SHIFTS s ON r.shift_id = s.shift_id
                     WHERE r.status IN ('approved', 'rejected')
-                    ORDER BY r.approved_at DESC
+                    ORDER BY COALESCE(r.approved_at, r.updated_at) DESC
                     LIMIT 10");
 $recent_decisions = $stmt->fetchAll();
 
@@ -99,8 +106,19 @@ $stmt = $pdo->query("SELECT
     SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_count,
     SUM(CASE WHEN priority = 'high' THEN 1 ELSE 0 END) as high_priority_count
     FROM EASYSALLES_SHIFT_REQUESTS 
-    WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
 $stats = $stmt->fetch();
+
+// Initialize stats if empty
+if (!$stats) {
+    $stats = [
+        'total' => 0,
+        'pending_count' => 0,
+        'approved_count' => 0,
+        'rejected_count' => 0,
+        'high_priority_count' => 0
+    ];
+}
 ?>
 
 <style>
@@ -318,6 +336,16 @@ $stats = $stmt->fetch();
 
 .badge-status-rejected {
     background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+}
+
+.badge-secondary {
+    background: linear-gradient(135deg, #6B7280, #4B5563);
     color: white;
 }
 
@@ -715,7 +743,7 @@ $stats = $stmt->fetch();
     <?php if (isset($_SESSION['success'])): ?>
         <div class="alert alert-success">
             <i class="fas fa-check-circle"></i>
-            <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+            <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
         </div>
     <?php endif; ?>
 
@@ -749,12 +777,13 @@ $stats = $stmt->fetch();
                         </thead>
                         <tbody>
                             <?php foreach ($pending_requests as $request): 
-                                $type_class = 'badge-' . $request['request_type'];
-                                $priority_class = 'badge-priority-' . $request['priority'];
+                                $type_class = 'badge-' . htmlspecialchars($request['request_type']);
+                                $priority_class = 'badge-priority-' . htmlspecialchars($request['priority']);
+                                $display_name = htmlspecialchars($request['requester_display_name'] ?? 'Unknown Staff');
                             ?>
                             <tr>
                                 <td>
-                                    <div style="font-weight: 600;"><?php echo htmlspecialchars($request['requester_name'] ?: $request['requester_username']); ?></div>
+                                    <div style="font-weight: 600;"><?php echo $display_name; ?></div>
                                     <div style="font-size: 0.85rem; color: #64748b;">
                                         <?php echo date('M j', strtotime($request['created_at'])); ?>
                                     </div>
@@ -779,7 +808,7 @@ $stats = $stmt->fetch();
                                             - <?php echo date('j', strtotime($request['end_date'])); ?>
                                         <?php endif; ?>
                                         <?php if ($request['shift_name']): ?>
-                                            <div style="font-size: 0.85rem; color: #64748b;"><?php echo $request['shift_name']; ?></div>
+                                            <div style="font-size: 0.85rem; color: #64748b;"><?php echo htmlspecialchars($request['shift_name']); ?></div>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
@@ -828,7 +857,8 @@ $stats = $stmt->fetch();
                 <?php else: ?>
                     <div class="recent-decisions-list">
                         <?php foreach ($recent_decisions as $decision): 
-                            $initials = substr($decision['requester_name'] ?: $decision['requester_username'], 0, 2);
+                            $display_name = htmlspecialchars($decision['requester_display_name'] ?? 'Unknown Staff');
+                            $initials = substr($display_name, 0, 2);
                         ?>
                         <div class="decision-item">
                             <div class="decision-info">
@@ -836,7 +866,7 @@ $stats = $stmt->fetch();
                                     <?php echo strtoupper($initials); ?>
                                 </div>
                                 <div class="staff-details">
-                                    <h4><?php echo htmlspecialchars($decision['requester_name'] ?: $decision['requester_username']); ?></h4>
+                                    <h4><?php echo $display_name; ?></h4>
                                     <p>
                                         <?php 
                                         $type_short = [
@@ -847,15 +877,20 @@ $stats = $stmt->fetch();
                                         ];
                                         echo $type_short[$decision['request_type']] ?? substr($decision['request_type'], 0, 2);
                                         ?>
-                                        • <?php echo date('M j', strtotime($decision['approved_at'])); ?>
+                                        • <?php 
+                                        $date = $decision['approved_at'] ?? $decision['updated_at'] ?? $decision['created_at'];
+                                        echo date('M j', strtotime($date)); 
+                                        ?>
                                     </p>
                                 </div>
                             </div>
                             <div class="decision-status">
                                 <?php if ($decision['status'] == 'approved'): ?>
                                     <span class="badge badge-status-approved">Approved</span>
-                                <?php else: ?>
+                                <?php elseif ($decision['status'] == 'rejected'): ?>
                                     <span class="badge badge-status-rejected">Rejected</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary"><?php echo ucfirst($decision['status']); ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -955,6 +990,10 @@ $stats = $stmt->fetch();
 const requestsData = <?php echo json_encode($pending_requests); ?>;
 const recentData = <?php echo json_encode($recent_decisions); ?>;
 
+function getDisplayName(request) {
+    return request.requester_display_name || request.requester_name || request.requester_username || 'Unknown Staff';
+}
+
 function reviewRequest(requestId, action, button) {
     // Find the request in our data
     const request = requestsData.find(r => r.request_id == requestId);
@@ -987,11 +1026,13 @@ function reviewRequest(requestId, action, button) {
         'low': 'Low'
     };
     
+    const displayName = getDisplayName(request);
+    
     document.getElementById('requestDetails').innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
             <div>
                 <strong>Staff Member:</strong><br>
-                ${request.requester_name || request.requester_username}
+                ${displayName}
             </div>
             <div>
                 <strong>Request Type:</strong><br>
@@ -1056,11 +1097,11 @@ function fetchRequestDetails(requestId) {
     `;
     document.getElementById('detailsModal').style.display = 'block';
     
-    // Simulate API call (in production, this would be a real AJAX call)
+    // In production, implement real AJAX call here
+    // For now, show error message
     setTimeout(() => {
-        // This is a fallback - in real implementation, you'd fetch from server
         populateDetailsModal({
-            requester_name: 'Unknown User',
+            requester_display_name: 'Unknown User',
             request_type: 'unknown',
             status: 'unknown',
             reason: 'Details not available'
@@ -1083,11 +1124,13 @@ function populateDetailsModal(request) {
         'cancelled': '<span class="badge badge-secondary">Cancelled</span>'
     };
     
+    const displayName = getDisplayName(request);
+    
     document.getElementById('detailsContent').innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
             <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05)); padding: 1rem; border-radius: 10px;">
                 <div style="font-size: 0.85rem; color: #64748b;">Staff Member</div>
-                <div style="font-weight: 600; margin-top: 0.25rem;">${request.requester_name || request.requester_username || 'Unknown'}</div>
+                <div style="font-weight: 600; margin-top: 0.25rem;">${displayName}</div>
             </div>
             <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05)); padding: 1rem; border-radius: 10px;">
                 <div style="font-size: 0.85rem; color: #64748b;">Request Type</div>
