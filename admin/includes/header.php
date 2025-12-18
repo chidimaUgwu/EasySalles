@@ -851,7 +851,7 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Sales</div>
-                
+
                 <a href="<?php echo getAdminURL('sales/index.php'); ?>" class="menu-item <?php echo isActive('sales_index') ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Sales History</span>
@@ -893,7 +893,7 @@ if (!isset($page_title)) {
             </div>
             
             <div class="header-right">
-                <button class="btn btn-outline menu-toggle" onclick="toggleSidebar()" style="display: none;">
+                <button class="btn btn-outline menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
                 
