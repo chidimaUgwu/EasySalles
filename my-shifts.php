@@ -84,6 +84,32 @@ $stmt = $pdo->prepare("SELECT user_id, full_name, username FROM EASYSALLES_USERS
                     WHERE role = 2 AND status = 'active' AND user_id != ?");
 $stmt->execute([$user_id]);
 $other_staff = $stmt->fetchAll();
+
+// my-shifts.php - Update the shift request handling section (around line 44)
+
+// Handle shift request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'])) {
+    $request_type = $_POST['request_type'];
+    
+    // Convert empty strings to NULL for integer columns
+    $shift_id = !empty($_POST['shift_id']) ? (int)$_POST['shift_id'] : null;
+    $requested_shift_id = !empty($_POST['requested_shift_id']) ? (int)$_POST['requested_shift_id'] : null;
+    $requested_user_id = !empty($_POST['requested_user_id']) ? (int)$_POST['requested_user_id'] : null;
+    
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'] ?? $start_date;
+    $reason = $_POST['reason'];
+    $priority = $_POST['priority'];
+    
+    $stmt = $pdo->prepare("INSERT INTO EASYSALLES_SHIFT_REQUESTS 
+                          (user_id, request_type, shift_id, requested_shift_id, requested_user_id, start_date, end_date, reason, priority) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$user_id, $request_type, $shift_id, $requested_shift_id, $requested_user_id, $start_date, $end_date, $reason, $priority]);
+    
+    $_SESSION['success'] = "Shift request submitted successfully!";
+    header("Location: my-shifts.php");
+    exit();
+}
 ?>
 <style>
     /* My Shifts Dashboard */
