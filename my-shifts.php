@@ -28,20 +28,27 @@ include 'includes/header.php';
 
 $user_id = $_SESSION['user_id'];
 
-// Handle shift request
+// Handle shift request - UPDATED WITH PROPER NULL HANDLING
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'])) {
     $request_type = $_POST['request_type'];
-    $shift_id = $_POST['shift_id'] ?? null;
-    $requested_shift_id = $_POST['requested_shift_id'] ?? null;
+    
+    // Convert empty strings to NULL for integer columns
+    $shift_id = !empty($_POST['shift_id']) ? (int)$_POST['shift_id'] : null;
+    $requested_shift_id = !empty($_POST['requested_shift_id']) ? (int)$_POST['requested_shift_id'] : null;
+    $requested_user_id = !empty($_POST['requested_user_id']) ? (int)$_POST['requested_user_id'] : null;
+    
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'] ?? $start_date;
     $reason = $_POST['reason'];
     $priority = $_POST['priority'];
     
+    // Prepare SQL statement with all required columns
     $stmt = $pdo->prepare("INSERT INTO EASYSALLES_SHIFT_REQUESTS 
-                          (user_id, request_type, shift_id, requested_shift_id, start_date, end_date, reason, priority) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$user_id, $request_type, $shift_id, $requested_shift_id, $start_date, $end_date, $reason, $priority]);
+                          (user_id, request_type, shift_id, requested_shift_id, requested_user_id, start_date, end_date, reason, priority) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    
+    // Execute with all parameters
+    $stmt->execute([$user_id, $request_type, $shift_id, $requested_shift_id, $requested_user_id, $start_date, $end_date, $reason, $priority]);
     
     $_SESSION['success'] = "Shift request submitted successfully!";
     header("Location: my-shifts.php");
@@ -84,33 +91,8 @@ $stmt = $pdo->prepare("SELECT user_id, full_name, username FROM EASYSALLES_USERS
                     WHERE role = 2 AND status = 'active' AND user_id != ?");
 $stmt->execute([$user_id]);
 $other_staff = $stmt->fetchAll();
-
-// my-shifts.php - Update the shift request handling section (around line 44)
-
-// Handle shift request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'])) {
-    $request_type = $_POST['request_type'];
-    
-    // Convert empty strings to NULL for integer columns
-    $shift_id = !empty($_POST['shift_id']) ? (int)$_POST['shift_id'] : null;
-    $requested_shift_id = !empty($_POST['requested_shift_id']) ? (int)$_POST['requested_shift_id'] : null;
-    $requested_user_id = !empty($_POST['requested_user_id']) ? (int)$_POST['requested_user_id'] : null;
-    
-    $start_date = $_POST['start_date'];
-    $end_date = $_POST['end_date'] ?? $start_date;
-    $reason = $_POST['reason'];
-    $priority = $_POST['priority'];
-    
-    $stmt = $pdo->prepare("INSERT INTO EASYSALLES_SHIFT_REQUESTS 
-                          (user_id, request_type, shift_id, requested_shift_id, requested_user_id, start_date, end_date, reason, priority) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$user_id, $request_type, $shift_id, $requested_shift_id, $requested_user_id, $start_date, $end_date, $reason, $priority]);
-    
-    $_SESSION['success'] = "Shift request submitted successfully!";
-    header("Location: my-shifts.php");
-    exit();
-}
 ?>
+
 <style>
     /* My Shifts Dashboard */
     .my-shifts-dashboard {
@@ -178,37 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         gap: 2rem;
         margin-bottom: 3rem;
     }
-    .modal-content {
-    background: var(--card-bg);
-    border-radius: 20px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh; /* Limit maximum height */
-    margin: 2rem auto;
-    position: relative;
-    animation: slideDown 0.4s ease;
-    border: 1px solid var(--border);
-    overflow-y: auto; /* Make entire modal scrollable */
-}
-
-/* Scrollbar styling for the entire modal */
-.modal-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb:hover {
-    background: var(--secondary);
-}
+    
     @media (max-width: 1024px) {
         .shifts-grid {
             grid-template-columns: 1fr;
@@ -241,65 +193,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         height: 100%;
         background: linear-gradient(135deg, var(--primary), var(--secondary));
     }
-    /* Modal Styles - Add scrollability */
-.modal-content {
-    background: var(--card-bg);
-    border-radius: 20px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh; /* Limit maximum height */
-    margin: 2rem auto;
-    position: relative;
-    animation: slideDown 0.4s ease;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Keep this to contain child scrolling */
-}
-
-.modal-header {
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0; /* Prevent header from shrinking */
-}
-
-.modal-body {
-    padding: 2rem;
-    overflow-y: auto; /* Make body scrollable */
-    flex-grow: 1; /* Allow body to grow */
-    max-height: calc(90vh - 130px); /* Calculate max height (adjust based on header/footer height) */
-}
-
-.modal-footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    flex-shrink: 0; /* Prevent footer from shrinking */
-}
-
-/* Optional: Add scrollbar styling for better appearance */
-.modal-body::-webkit-scrollbar {
-    width: 8px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 4px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--secondary);
-}
     
     .card-header {
         display: flex;
@@ -711,10 +604,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         border-radius: 20px;
         width: 90%;
         max-width: 600px;
+        max-height: 90vh; /* Limit maximum height */
         margin: 2rem auto;
         position: relative;
         animation: slideDown 0.4s ease;
         border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Keep this to contain child scrolling */
     }
     
     .modal-header {
@@ -723,6 +620,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0; /* Prevent header from shrinking */
     }
     
     .modal-header h4 {
@@ -748,6 +646,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
     
     .modal-body {
         padding: 2rem;
+        overflow-y: auto; /* Make body scrollable */
+        flex-grow: 1; /* Allow body to grow */
+        max-height: calc(90vh - 130px); /* Calculate max height (adjust based on header/footer height) */
     }
     
     .modal-footer {
@@ -756,6 +657,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
+        flex-shrink: 0; /* Prevent footer from shrinking */
+    }
+    
+    /* Optional: Add scrollbar styling for better appearance */
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+        background: var(--primary);
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: var(--secondary);
     }
     
     /* Form Elements */
@@ -832,6 +753,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
             width: 100%;
             justify-content: flex-end;
         }
+        
+        .modal-content {
+            width: 95%;
+            max-height: 95vh;
+            margin: 1rem auto;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+            max-height: calc(95vh - 120px);
+        }
+        
+        .modal-header,
+        .modal-footer {
+            padding: 1.25rem;
+        }
     }
     
     @media (max-width: 480px) {
@@ -846,6 +783,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['request_shift_change'
         
         .calendar-day {
             min-height: 80px;
+        }
+        
+        .modal-content {
+            width: 98%;
+            border-radius: 15px;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
         }
     }
     
@@ -1293,7 +1243,17 @@ function changeMonth(delta) {
 }
 
 function openRequestModal(type) {
-    document.getElementById('requestModal').style.display = 'block';
+    const modal = document.getElementById('requestModal');
+    modal.style.display = 'block';
+    
+    // Scroll to top of modal content when opening
+    setTimeout(() => {
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.scrollTop = 0;
+        }
+    }, 10);
+    
     if (type) {
         document.getElementById('request_type').value = type;
         updateRequestForm();
@@ -1315,24 +1275,6 @@ function requestForShift(userShiftId, shiftDate, shiftId) {
         document.getElementById('start_date').value = shiftDate;
         document.getElementById('end_date').value = shiftDate;
         document.getElementById('shift_id').value = shiftId;
-    }
-}
-
-function openRequestModal(type) {
-    const modal = document.getElementById('requestModal');
-    modal.style.display = 'block';
-    
-    // Scroll to top of modal content when opening
-    setTimeout(() => {
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.scrollTop = 0;
-        }
-    }, 10);
-    
-    if (type) {
-        document.getElementById('request_type').value = type;
-        updateRequestForm();
     }
 }
 
@@ -1383,14 +1325,6 @@ function updateRequestForm() {
     }
 }
 
-function closeRequestModal() {
-    document.getElementById('requestModal').style.display = 'none';
-    // Reset form
-    document.getElementById('requestForm').reset();
-    document.getElementById('request_user_shift_id').value = '';
-    document.getElementById('shiftInfo').style.display = 'none';
-}
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateTime();
@@ -1401,10 +1335,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set default dates in modal
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('start_date').value = today;
-});
-
-// Display greeting based on time of day
-document.addEventListener('DOMContentLoaded', function() {
+    
+    // Display greeting based on time of day
     const hour = new Date().getHours();
     let greeting = '';
     
