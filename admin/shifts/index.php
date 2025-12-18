@@ -1,13 +1,10 @@
 <?php
-// admin/shifts/index.php
+// admin/shifts/manage.php
 require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/auth.php';
+require_once ROOT_PATH . '/includes/auth.php';
 require_admin();
 
-$page_title = "Manage Shift Templates";
-require_once ROOT_PATH . 'admin/includes/header.php';
-
-// Handle form submissions
+// Handle form submissions BEFORE any output
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_shift'])) {
         $shift_name = $_POST['shift_name'];
@@ -19,6 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$shift_name, $start_time, $end_time, $color]);
         
         $_SESSION['success'] = "Shift template added successfully!";
+        header("Location: manage.php");
+        exit();
     }
     
     if (isset($_POST['update_shift'])) {
@@ -32,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$shift_name, $start_time, $end_time, $color, $shift_id]);
         
         $_SESSION['success'] = "Shift template updated successfully!";
+        header("Location: manage.php");
+        exit();
     }
     
     if (isset($_POST['delete_shift'])) {
@@ -49,11 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$shift_id]);
             $_SESSION['success'] = "Shift template deleted successfully!";
         }
+        
+        header("Location: manage.php");
+        exit();
     }
-    
-    header("Location: manage.php");
-    exit();
 }
+
+// Now start output AFTER all header redirects
+$page_title = "Manage Shift Templates";
+require_once ROOT_PATH . 'admin/includes/header.php';
 
 // Get all shift templates
 $stmt = $pdo->query("SELECT * FROM EASYSALLES_SHIFTS ORDER BY start_time");
