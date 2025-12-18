@@ -137,17 +137,16 @@ unset($staff); // Break reference
 ?>
 
 <style>
-   /* Reset and base styles */
+    /* Reset and base styles */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
     }
     
-    
-    .dashboard-container {
-        width: 70%;
-        max-width: 700px;
+    .single-column-container {
+        width: 80%;
+        /* max-width: 80px; */
         margin: 0 auto;
         padding: 0 1rem;
     }
@@ -165,8 +164,6 @@ unset($staff); // Break reference
         color: var(--text);
         margin-bottom: 0.5rem;
     }
-    
-
     
     .page-title p {
         color: var(--text-muted);
@@ -728,7 +725,7 @@ unset($staff); // Break reference
     
     /* Responsive Design */
     @media (max-width: 768px) {
-        .dashboard-container {
+        .single-column-container {
             padding: 0 0.75rem;
         }
         
