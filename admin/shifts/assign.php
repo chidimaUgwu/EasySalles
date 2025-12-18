@@ -3,68 +3,32 @@
 ob_start(); // Start output buffering
 
 require_once __DIR__ . '/../../config.php';
-require_once ROOT_PATH . '/includes/auth.php';
+require_once __DIR__ . '/../../includes/auth.php';
 require_admin();
 
-// Get database connection from config
-global $pdo; // Use global if $pdo is defined in config.php
-
-// If $pdo is not available, create a new connection
-if (!isset($pdo) || $pdo === null) {
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-            DB_USER,
-            DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ]
-        );
-    } catch (PDOException $e) {
-        die("Database connection failed: " . $e->getMessage());
-    }
-}
-
-// Function to safely redirect
-function safe_redirect($url) {
-    ob_end_clean();
-    header("Location: " . $url);
-    exit();
-}
+$page_title = "Assign Shifts";
+require_once ROOT_PATH . 'admin/includes/header.php';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate database connection
-    if (!isset($pdo) || $pdo === null) {
-        $_SESSION['error'] = "Database connection failed!";
-        safe_redirect("assign.php");
-    }
-    
     if (isset($_POST['assign_shift'])) {
         $user_id = $_POST['user_id'];
         $shift_id = $_POST['shift_id'];
         $assigned_date = $_POST['assigned_date'];
-        $notes = $_POST['notes'] ?? '';
+        $notes = $_POST['notes'];
         
-        try {
-            // Check if shift already assigned for that date
-            $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
-            $stmt->execute([$user_id, $assigned_date]);
+        // Check if shift already assigned for that date
+        $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
+        $stmt->execute([$user_id, $assigned_date]);
+        
+        if ($stmt->rowCount() > 0) {
+            $_SESSION['error'] = "This staff already has a shift assigned for this date!";
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date, notes) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user_id, $shift_id, $assigned_date, $notes]);
             
-            if ($stmt->rowCount() > 0) {
-                $_SESSION['error'] = "This staff already has a shift assigned for this date!";
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date, notes) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$user_id, $shift_id, $assigned_date, $notes]);
-                
-                $_SESSION['success'] = "Shift assigned successfully!";
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Error: " . $e->getMessage();
+            $_SESSION['success'] = "Shift assigned successfully!";
         }
-        safe_redirect("assign.php");
     }
     
     if (isset($_POST['bulk_assign'])) {
@@ -72,145 +36,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $shift_id = $_POST['bulk_shift_id'];
         $start_date = $_POST['start_date'];
         $end_date = $_POST['end_date'];
-        $days = $_POST['days'] ?? [];
+        $days = isset($_POST['days']) ? $_POST['days'] : [];
         
-        if (empty($user_ids)) {
-            $_SESSION['error'] = "Please select at least one staff member!";
-            safe_redirect("assign.php");
-        }
+        // Generate dates between start and end
+        $period = new DatePeriod(
+            new DateTime($start_date),
+            new DateInterval('P1D'),
+            new DateTime($end_date . ' +1 day')
+        );
         
-        if (empty($shift_id)) {
-            $_SESSION['error'] = "Please select a shift template!";
-            safe_redirect("assign.php");
-        }
-        
-        if (empty($days)) {
-            $_SESSION['error'] = "Please select at least one day of the week!";
-            safe_redirect("assign.php");
-        }
-        
-        // Validate dates
-        if (strtotime($start_date) > strtotime($end_date)) {
-            $_SESSION['error'] = "Start date cannot be after end date!";
-            safe_redirect("assign.php");
-        }
-        
-        try {
-            // Generate dates between start and end
-            $period = new DatePeriod(
-                new DateTime($start_date),
-                new DateInterval('P1D'),
-                new DateTime($end_date . ' 23:59:59')
-            );
+        $assigned_count = 0;
+        foreach ($period as $date) {
+            $date_str = $date->format('Y-m-d');
+            $day_of_week = $date->format('w'); // 0 (Sunday) to 6 (Saturday)
             
-            $assigned_count = 0;
-            $errors = [];
-            
-            foreach ($period as $date) {
-                $date_str = $date->format('Y-m-d');
-                $day_of_week = $date->format('w'); // 0 (Sunday) to 6 (Saturday)
-                
-                // Check if day is selected
-                if (in_array($day_of_week, $days)) {
-                    foreach ($user_ids as $user_id) {
-                        // Check if already assigned
-                        $check_stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
-                        $check_stmt->execute([$user_id, $date_str]);
-                        
-                        if ($check_stmt->rowCount() == 0) {
-                            $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date) VALUES (?, ?, ?)");
-                            $stmt->execute([$user_id, $shift_id, $date_str]);
-                            $assigned_count++;
-                        }
+            // Check if day is selected
+            if (in_array($day_of_week, $days)) {
+                foreach ($user_ids as $user_id) {
+                    // Check if already assigned
+                    $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
+                    $stmt->execute([$user_id, $date_str]);
+                    
+                    if ($stmt->rowCount() == 0) {
+                        $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date) VALUES (?, ?, ?)");
+                        $stmt->execute([$user_id, $shift_id, $date_str]);
+                        $assigned_count++;
                     }
                 }
             }
-            
-            if ($assigned_count > 0) {
-                $_SESSION['success'] = "Bulk assignment completed! $assigned_count shifts assigned.";
-                if (!empty($errors)) {
-                    $_SESSION['warning'] = implode('<br>', $errors);
-                }
-            } else {
-                $_SESSION['error'] = "No shifts were assigned. All selected staff may already have shifts on the selected dates.";
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Error during bulk assignment: " . $e->getMessage();
         }
-        safe_redirect("assign.php");
+        
+        $_SESSION['success'] = "Bulk assignment completed! $assigned_count shifts assigned.";
     }
     
     if (isset($_POST['update_status'])) {
         $user_shift_id = $_POST['user_shift_id'];
         $status = $_POST['status'];
-        $notes = $_POST['update_notes'] ?? '';
+        $notes = $_POST['update_notes'];
         
-        try {
-            $stmt = $pdo->prepare("UPDATE EASYSALLES_USER_SHIFTS SET status = ?, notes = CONCAT(IFNULL(notes, ''), ?) WHERE user_shift_id = ?");
-            $stmt->execute([$status, "\n" . date('Y-m-d H:i:s') . ': ' . $notes, $user_shift_id]);
-            
-            $_SESSION['success'] = "Shift status updated!";
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Error updating status: " . $e->getMessage();
-        }
-        safe_redirect("assign.php");
+        $stmt = $pdo->prepare("UPDATE EASYSALLES_USER_SHIFTS SET status = ?, notes = CONCAT(IFNULL(notes, ''), ?) WHERE user_shift_id = ?");
+        $stmt->execute([$status, "\n" . date('Y-m-d H:i:s') . ': ' . $notes, $user_shift_id]);
+        
+        $_SESSION['success'] = "Shift status updated!";
     }
     
-    safe_redirect("assign.php");
+    // JavaScript redirect to avoid header issues
+    echo '<script>window.location.href = "assign.php";</script>';
+    exit();
 }
-
-// Set page title
-$page_title = "Assign Shifts";
-require_once ROOT_PATH . 'admin/includes/header.php';
 
 // Get active staff members
-try {
-    $stmt = $pdo->query("SELECT * FROM EASYSALLES_USERS WHERE role = 2 AND status = 'active' ORDER BY full_name");
-    $staff = $stmt->fetchAll();
-} catch (Exception $e) {
-    $staff = [];
-    $_SESSION['error'] = "Error loading staff: " . $e->getMessage();
-}
+$stmt = $pdo->query("SELECT * FROM EASYSALLES_USERS WHERE role = 2 AND status = 'active' ORDER BY full_name");
+$staff = $stmt->fetchAll();
 
 // Get shift templates
-try {
-    $stmt = $pdo->query("SELECT * FROM EASYSALLES_SHIFTS ORDER BY start_time");
-    $shifts = $stmt->fetchAll();
-} catch (Exception $e) {
-    $shifts = [];
-    $_SESSION['error'] = "Error loading shifts: " . $e->getMessage();
-}
+$stmt = $pdo->query("SELECT * FROM EASYSALLES_SHIFTS ORDER BY start_time");
+$shifts = $stmt->fetchAll();
 
 // Get upcoming assigned shifts
-try {
-    $stmt = $pdo->query("SELECT us.*, u.full_name, u.username, s.shift_name, s.start_time, s.end_time, s.color 
-                         FROM EASYSALLES_USER_SHIFTS us
-                         JOIN EASYSALLES_USERS u ON us.user_id = u.user_id
-                         JOIN EASYSALLES_SHIFTS s ON us.shift_id = s.shift_id
-                         WHERE us.assigned_date >= CURDATE()
-                         ORDER BY us.assigned_date, s.start_time");
-    $assigned_shifts = $stmt->fetchAll();
-} catch (Exception $e) {
-    $assigned_shifts = [];
-    $_SESSION['error'] = "Error loading assigned shifts: " . $e->getMessage();
-}
+$stmt = $pdo->query("SELECT us.*, u.full_name, u.username, s.shift_name, s.start_time, s.end_time, s.color 
+                     FROM EASYSALLES_USER_SHIFTS us
+                     JOIN EASYSALLES_USERS u ON us.user_id = u.user_id
+                     JOIN EASYSALLES_SHIFTS s ON us.shift_id = s.shift_id
+                     WHERE us.assigned_date >= CURDATE()
+                     ORDER BY us.assigned_date, s.start_time");
+$assigned_shifts = $stmt->fetchAll();
 ?>
 
 <style>
-/* Shift Assignment Styles */
-.shift-assignment {
+/* Dashboard Specific Styles */
+.shift-dashboard {
     max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
     animation: fadeIn 0.6s ease-out;
 }
 
-.assignment-header {
-    margin-bottom: 2.5rem;
-    text-align: center;
+.dashboard-header {
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease-out;
 }
 
-.assignment-header h1 {
+.welcome-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.welcome-text h1 {
     font-family: 'Poppins', sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
@@ -218,43 +130,55 @@ try {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
-.assignment-header p {
+.welcome-text p {
     color: #64748b;
     font-size: 1.1rem;
     max-width: 600px;
     margin: 0 auto;
 }
 
-/* Assignment Layout */
-.assignment-layout {
+/* Assignment Grid */
+.assignment-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
     margin-bottom: 3rem;
 }
 
 @media (max-width: 1024px) {
-    .assignment-layout {
+    .assignment-grid {
         grid-template-columns: 1fr;
     }
 }
 
-/* Assignment Cards */
-.assignment-card {
+/* Shift Cards */
+.shift-card {
     background: var(--card-bg);
     border-radius: 20px;
     padding: 2rem;
     box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border);
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.assignment-card:hover {
-    transform: translateY(-3px);
+.shift-card:hover {
+    transform: translateY(-5px);
     box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+}
+
+.shift-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
 }
 
 .card-header {
@@ -265,31 +189,31 @@ try {
 }
 
 .card-header i {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     color: white;
 }
 
-.single-assign .card-header i {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+.single-shift .card-header i {
+    background: linear-gradient(135deg, var(--primary), #8B5CF6);
 }
 
-.bulk-assign .card-header i {
-    background: linear-gradient(135deg, #10B981, #059669);
+.bulk-shift .card-header i {
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
 }
 
 .upcoming-shifts .card-header i {
-    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+    background: linear-gradient(135deg, #10B981, #059669);
 }
 
 .card-header h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 600;
     color: var(--text);
     margin: 0;
@@ -312,9 +236,9 @@ try {
 
 .form-control {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--bg);
     color: var(--text);
     font-size: 1rem;
@@ -327,13 +251,19 @@ try {
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
-/* Staff Selection Grid */
-.staff-grid {
+.time-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Staff Selection */
+.staff-selection {
     max-height: 200px;
     overflow-y: auto;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--bg);
 }
 
@@ -344,7 +274,6 @@ try {
     padding: 0.75rem;
     border-radius: 8px;
     transition: all 0.3s ease;
-    cursor: pointer;
 }
 
 .staff-item:hover {
@@ -354,11 +283,12 @@ try {
 .staff-checkbox {
     width: 20px;
     height: 20px;
-    border-radius: 5px;
+    border-radius: 6px;
     border: 2px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
@@ -374,6 +304,17 @@ try {
     font-weight: bold;
 }
 
+.staff-info h4 {
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+}
+
+.staff-info span {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
 /* Days Selection */
 .days-selection {
     display: grid;
@@ -382,21 +323,28 @@ try {
     margin-top: 0.5rem;
 }
 
+.day-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .day-checkbox {
     display: none;
 }
 
 .day-label {
+    width: 100%;
+    padding: 0.75rem 0;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0.5rem;
-    border-radius: 8px;
-    background: var(--bg);
-    border: 2px solid var(--border);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
 }
 
 .day-label:hover {
@@ -409,24 +357,45 @@ try {
     color: white;
 }
 
-/* Upcoming Shifts */
-.upcoming-shifts-list {
-    max-height: 500px;
-    overflow-y: auto;
+.day-label .day-letter {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
 }
 
-.shift-assignment-item {
+.day-label .day-name {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Upcoming Shifts */
+.upcoming-shifts-container {
+    margin-top: 3rem;
+}
+
+.shifts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.shift-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.25rem;
     border-bottom: 1px solid var(--border);
     transition: all 0.3s ease;
 }
 
-.shift-assignment-item:hover {
-    background: rgba(124, 58, 237, 0.05);
-    border-radius: 8px;
+.shift-item:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+    transform: translateX(5px);
+    border-radius: 10px;
+}
+
+.shift-item:last-child {
+    border-bottom: none;
 }
 
 .shift-info {
@@ -436,19 +405,19 @@ try {
 }
 
 .shift-color {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
     font-size: 1.2rem;
+    color: white;
 }
 
 .staff-details h4 {
     font-weight: 600;
-    margin: 0 0 0.25rem 0;
+    margin-bottom: 0.25rem;
     color: var(--text);
 }
 
@@ -463,9 +432,10 @@ try {
 }
 
 .shift-date {
+    font-family: 'Poppins', sans-serif;
     font-weight: 600;
-    margin-bottom: 0.25rem;
     color: var(--text);
+    margin-bottom: 0.25rem;
 }
 
 .shift-time {
@@ -476,24 +446,45 @@ try {
 
 .shift-status {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.5rem 1rem;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
-.status-scheduled { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
-.status-completed { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-.status-cancelled { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
-.status-absent { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+.status-scheduled {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+.status-absent {
+    background: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+}
+
+.shift-actions {
+    display: flex;
+    gap: 0.5rem;
+}
 
 /* Buttons */
 .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border: none;
-    padding: 0.875rem 1.5rem;
-    border-radius: 10px;
+    padding: 1rem 2rem;
+    border-radius: 12px;
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
     font-size: 1rem;
@@ -502,12 +493,11 @@ try {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    text-decoration: none;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
 }
 
 .btn-select-all {
@@ -515,7 +505,7 @@ try {
     color: var(--primary);
     border: none;
     padding: 0.5rem 1rem;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.85rem;
     cursor: pointer;
     margin-top: 0.5rem;
@@ -526,35 +516,54 @@ try {
     background: rgba(124, 58, 237, 0.2);
 }
 
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.btn-edit {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.btn-edit:hover {
+    background: #3B82F6;
+    color: white;
+    transform: scale(1.05);
+}
+
 /* Alert Messages */
 .alert {
     padding: 1rem 1.5rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
     display: flex;
     align-items: center;
     gap: 1rem;
+    animation: slideDown 0.3s ease;
 }
 
 .alert-success {
-    background: rgba(16, 185, 129, 0.1);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
     border-left: 4px solid #10B981;
     color: #065F46;
 }
 
 .alert-error {
-    background: rgba(239, 68, 68, 0.1);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
     border-left: 4px solid #EF4444;
     color: #7F1D1D;
 }
 
-.alert-warning {
-    background: rgba(245, 158, 11, 0.1);
-    border-left: 4px solid #F59E0B;
-    color: #92400E;
-}
-
-/* Modal */
+/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -563,22 +572,24 @@ try {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
     z-index: 1000;
-    align-items: center;
-    justify-content: center;
+    animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
     background: var(--card-bg);
-    border-radius: 15px;
+    border-radius: 20px;
     width: 90%;
     max-width: 500px;
-    padding: 0;
+    margin: 2rem auto;
+    position: relative;
+    animation: slideDown 0.4s ease;
     border: 1px solid var(--border);
 }
 
 .modal-header {
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
@@ -586,25 +597,32 @@ try {
 }
 
 .modal-header h4 {
-    margin: 0;
-    font-size: 1.25rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
     font-weight: 600;
+    margin: 0;
+    color: var(--text);
 }
 
 .close-modal {
     background: none;
     border: none;
     font-size: 1.5rem;
+    color: #64748b;
     cursor: pointer;
-    color: #666;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+    color: var(--text);
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 2rem;
 }
 
 .modal-footer {
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
@@ -612,10 +630,13 @@ try {
 }
 
 .btn-outline {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border);
-    background: none;
-    border-radius: 6px;
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -623,27 +644,52 @@ try {
 .btn-outline:hover {
     border-color: var(--primary);
     color: var(--primary);
+    transform: translateY(-2px);
 }
 
-/* Responsive */
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-    .shift-assignment {
-        padding: 1rem;
+    .shift-dashboard {
+        padding: 1.5rem;
     }
     
-    .assignment-header h1 {
-        font-size: 1.75rem;
+    .dashboard-header h1 {
+        font-size: 2rem;
     }
     
-    .card-header h2 {
-        font-size: 1.25rem;
+    .assignment-grid {
+        gap: 1.5rem;
+    }
+    
+    .shift-card {
+        padding: 1.5rem;
     }
     
     .days-selection {
         grid-template-columns: repeat(4, 1fr);
     }
     
-    .shift-assignment-item {
+    .shift-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
@@ -654,12 +700,54 @@ try {
         width: 100%;
     }
 }
+
+@media (max-width: 480px) {
+    .shift-dashboard {
+        padding: 1rem;
+    }
+    
+    .days-selection {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 
-<div class="shift-assignment">
-    <div class="assignment-header">
-        <h1>Assign Shifts to Staff</h1>
-        <p>Schedule and manage shifts for your team members</p>
+<div class="shift-dashboard">
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <div class="welcome-text">
+                <h1>Assign Shifts to Staff</h1>
+                <p>Schedule shifts for your team members with ease</p>
+            </div>
+        </div>
     </div>
 
     <?php if (isset($_SESSION['success'])): ?>
@@ -675,23 +763,16 @@ try {
             <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
         </div>
     <?php endif; ?>
-    
-    <?php if (isset($_SESSION['warning'])): ?>
-        <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle"></i>
-            <?php echo $_SESSION['warning']; unset($_SESSION['warning']); ?>
-        </div>
-    <?php endif; ?>
 
-    <div class="assignment-layout">
+    <div class="assignment-grid">
         <!-- Single Shift Assignment -->
-        <div class="assignment-card single-assign">
+        <div class="shift-card single-shift">
             <div class="card-header">
-                <i class="fas fa-user-clock"></i>
+                <i class="fas fa-user-plus"></i>
                 <h2>Assign Single Shift</h2>
             </div>
             
-            <form method="POST" onsubmit="return validateSingleShift()">
+            <form method="POST">
                 <div class="form-group">
                     <label for="user_id">
                         <i class="fas fa-user"></i> Staff Member
@@ -701,6 +782,7 @@ try {
                         <?php foreach ($staff as $member): ?>
                         <option value="<?php echo $member['user_id']; ?>">
                             <?php echo htmlspecialchars($member['full_name'] ?: $member['username']); ?>
+                            <?php if ($member['full_name']): ?> (<?php echo htmlspecialchars($member['username']); ?>)<?php endif; ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -708,12 +790,18 @@ try {
                 
                 <div class="form-group">
                     <label for="shift_id">
-                        <i class="fas fa-clock"></i> Shift
+                        <i class="fas fa-clock"></i> Shift Template
                     </label>
                     <select class="form-control" id="shift_id" name="shift_id" required>
                         <option value="">Select shift...</option>
-                        <?php foreach ($shifts as $shift): ?>
-                        <option value="<?php echo $shift['shift_id']; ?>">
+                        <?php foreach ($shifts as $shift): 
+                            $duration = (new DateTime($shift['start_time']))->diff(new DateTime($shift['end_time']));
+                            $duration_text = $duration->h . 'h';
+                            if ($duration->i > 0) $duration_text .= ' ' . $duration->i . 'm';
+                        ?>
+                        <option value="<?php echo $shift['shift_id']; ?>" 
+                                data-color="<?php echo $shift['color']; ?>"
+                                data-duration="<?php echo $duration_text; ?>">
                             <?php echo htmlspecialchars($shift['shift_name']); ?> 
                             (<?php echo date('h:i A', strtotime($shift['start_time'])); ?> - 
                             <?php echo date('h:i A', strtotime($shift['end_time'])); ?>)
@@ -732,10 +820,10 @@ try {
                 
                 <div class="form-group">
                     <label for="notes">
-                        <i class="fas fa-sticky-note"></i> Notes
+                        <i class="fas fa-sticky-note"></i> Notes (Optional)
                     </label>
                     <textarea class="form-control" id="notes" name="notes" rows="2" 
-                              placeholder="Any special instructions..."></textarea>
+                              placeholder="Any special instructions or notes for this shift..."></textarea>
                 </div>
                 
                 <button type="submit" name="assign_shift" class="btn-primary">
@@ -745,23 +833,24 @@ try {
         </div>
 
         <!-- Bulk Assignment -->
-        <div class="assignment-card bulk-assign">
+        <div class="shift-card bulk-shift">
             <div class="card-header">
                 <i class="fas fa-users"></i>
                 <h2>Bulk Assign Shifts</h2>
             </div>
             
-            <form method="POST" onsubmit="return validateBulkAssignment()">
+            <form method="POST">
                 <div class="form-group">
                     <label>
                         <i class="fas fa-user-friends"></i> Select Staff Members
                     </label>
-                    <div class="staff-grid" id="staffGrid">
+                    <div class="staff-selection">
                         <?php foreach ($staff as $member): ?>
-                        <div class="staff-item" data-user-id="<?php echo $member['user_id']; ?>">
-                            <div class="staff-checkbox"></div>
+                        <div class="staff-item">
+                            <div class="staff-checkbox" onclick="toggleStaff(this, <?php echo $member['user_id']; ?>)"></div>
                             <input type="checkbox" name="user_ids[]" 
                                    value="<?php echo $member['user_id']; ?>" 
+                                   id="user_<?php echo $member['user_id']; ?>" 
                                    style="display: none;">
                             <div class="staff-info">
                                 <h4><?php echo htmlspecialchars($member['full_name'] ?: $member['username']); ?></h4>
@@ -770,7 +859,7 @@ try {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn-select-all" onclick="toggleSelectAll()">
+                    <button type="button" class="btn-select-all" onclick="selectAllStaff()">
                         <i class="fas fa-check-double"></i> Select All Staff
                     </button>
                 </div>
@@ -789,20 +878,19 @@ try {
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <div class="row">
-                        <div class="col-6">
-                            <label for="start_date">
-                                <i class="fas fa-calendar-alt"></i> Start Date
-                            </label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" required>
-                        </div>
-                        <div class="col-6">
-                            <label for="end_date">
-                                <i class="fas fa-calendar-alt"></i> End Date
-                            </label>
-                            <input type="date" class="form-control" id="end_date" name="end_date" required>
-                        </div>
+                <div class="time-inputs">
+                    <div class="form-group">
+                        <label for="start_date">
+                            <i class="fas fa-calendar-alt"></i> Start Date
+                        </label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end_date">
+                            <i class="fas fa-calendar-alt"></i> End Date
+                        </label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
                     </div>
                 </div>
                 
@@ -822,18 +910,18 @@ try {
                             ['value' => '0', 'letter' => 'S', 'name' => 'Sun']
                         ];
                         foreach ($days as $day): ?>
-                        <div>
+                        <div class="day-item">
                             <input type="checkbox" class="day-checkbox" name="days[]" 
                                    value="<?php echo $day['value']; ?>" 
                                    id="day_<?php echo $day['value']; ?>">
                             <label for="day_<?php echo $day['value']; ?>" class="day-label">
-                                <span><?php echo $day['letter']; ?></span>
-                                <small><?php echo $day['name']; ?></small>
+                                <span class="day-letter"><?php echo $day['letter']; ?></span>
+                                <span class="day-name"><?php echo $day['name']; ?></span>
                             </label>
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <button type="button" class="btn-select-all" onclick="toggleSelectAllDays()">
+                    <button type="button" class="btn-select-all" onclick="selectWeekdays()">
                         <i class="fas fa-check-double"></i> Select Weekdays
                     </button>
                 </div>
@@ -846,61 +934,64 @@ try {
     </div>
 
     <!-- Upcoming Shifts -->
-    <div class="assignment-card upcoming-shifts">
-        <div class="card-header">
-            <i class="fas fa-calendar-check"></i>
-            <h2>Upcoming Shifts</h2>
-        </div>
-        
-        <?php if (empty($assigned_shifts)): ?>
-            <div style="text-align: center; padding: 3rem; color: #666;">
-                <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                <p>No upcoming shifts scheduled</p>
+    <div class="upcoming-shifts-container">
+        <div class="shift-card upcoming-shifts">
+            <div class="card-header">
+                <i class="fas fa-calendar-check"></i>
+                <h2>Upcoming Shifts</h2>
             </div>
-        <?php else: ?>
-            <div class="upcoming-shifts-list">
-                <?php foreach ($assigned_shifts as $assignment): 
-                    $status_class = [
-                        'scheduled' => 'status-scheduled',
-                        'completed' => 'status-completed',
-                        'cancelled' => 'status-cancelled',
-                        'absent' => 'status-absent'
-                    ];
-                ?>
-                <div class="shift-assignment-item">
-                    <div class="shift-info">
-                        <div class="shift-color" style="background: <?php echo $assignment['color']; ?>;">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="staff-details">
-                            <h4><?php echo htmlspecialchars($assignment['full_name'] ?: $assignment['username']); ?></h4>
-                            <p><?php echo htmlspecialchars($assignment['shift_name']); ?></p>
-                        </div>
-                    </div>
-                    
-                    <div class="shift-details">
-                        <div class="shift-date">
-                            <?php echo date('M j, Y', strtotime($assignment['assigned_date'])); ?>
-                        </div>
-                        <div class="shift-time">
-                            <?php echo date('h:i A', strtotime($assignment['start_time'])); ?> - 
-                            <?php echo date('h:i A', strtotime($assignment['end_time'])); ?>
-                        </div>
-                        <span class="shift-status <?php echo $status_class[$assignment['status']]; ?>">
-                            <?php echo ucfirst($assignment['status']); ?>
-                        </span>
-                        
-                        <div style="margin-top: 0.5rem;">
-                            <button type="button" class="btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;"
-                                    onclick="updateStatus(<?php echo $assignment['user_shift_id']; ?>, '<?php echo $assignment['status']; ?>')">
-                                <i class="fas fa-edit"></i> Update
-                            </button>
-                        </div>
-                    </div>
+            
+            <?php if (empty($assigned_shifts)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No Upcoming Shifts</h3>
+                    <p>Assign shifts to see them here</p>
                 </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+            <?php else: ?>
+                <div class="shifts-list">
+                    <?php foreach ($assigned_shifts as $assignment): 
+                        $status_class = [
+                            'scheduled' => 'status-scheduled',
+                            'completed' => 'status-completed',
+                            'cancelled' => 'status-cancelled',
+                            'absent' => 'status-absent'
+                        ];
+                    ?>
+                    <div class="shift-item">
+                        <div class="shift-info">
+                            <div class="shift-color" style="background: <?php echo $assignment['color']; ?>;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="staff-details">
+                                <h4><?php echo htmlspecialchars($assignment['full_name'] ?: $assignment['username']); ?></h4>
+                                <p><?php echo htmlspecialchars($assignment['shift_name']); ?></p>
+                            </div>
+                        </div>
+                        
+                        <div class="shift-details">
+                            <div class="shift-date">
+                                <?php echo date('M j, Y', strtotime($assignment['assigned_date'])); ?>
+                            </div>
+                            <div class="shift-time">
+                                <?php echo date('h:i A', strtotime($assignment['start_time'])); ?> - 
+                                <?php echo date('h:i A', strtotime($assignment['end_time'])); ?>
+                            </div>
+                            <span class="shift-status <?php echo $status_class[$assignment['status']]; ?>">
+                                <?php echo ucfirst($assignment['status']); ?>
+                            </span>
+                            
+                            <div class="shift-actions">
+                                <button type="button" class="btn-icon btn-edit" 
+                                        onclick="updateStatus(<?php echo $assignment['user_shift_id']; ?>, '<?php echo $assignment['status']; ?>')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -918,7 +1009,9 @@ try {
                 <input type="hidden" name="update_status" value="1">
                 
                 <div class="form-group">
-                    <label for="status">Status</label>
+                    <label for="status">
+                        <i class="fas fa-info-circle"></i> Status
+                    </label>
                     <select class="form-control" id="status" name="status" required>
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
@@ -928,7 +1021,9 @@ try {
                 </div>
                 
                 <div class="form-group">
-                    <label for="update_notes">Notes</label>
+                    <label for="update_notes">
+                        <i class="fas fa-sticky-note"></i> Notes
+                    </label>
                     <textarea class="form-control" id="update_notes" name="update_notes" rows="3" 
                               placeholder="Add notes about status change..."></textarea>
                 </div>
@@ -936,14 +1031,16 @@ try {
             
             <div class="modal-footer">
                 <button type="button" class="btn-outline close-modal">Cancel</button>
-                <button type="submit" class="btn-primary">Update Status</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Update Status
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-// Initialize dates
+// Initialize date inputs
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     const nextWeek = new Date();
@@ -955,9 +1052,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('end_date').value = nextWeekStr;
     document.getElementById('assigned_date').value = today;
     
-    // Initialize staff selection
-    initStaffSelection();
-    
     // Select weekdays by default
     [1,2,3,4,5].forEach(day => {
         const checkbox = document.getElementById('day_' + day);
@@ -965,41 +1059,27 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Staff selection functionality
-function initStaffSelection() {
-    const staffItems = document.querySelectorAll('.staff-item');
-    staffItems.forEach(item => {
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        const visualCheckbox = item.querySelector('.staff-checkbox');
-        
-        item.addEventListener('click', function(e) {
-            if (e.target.type === 'checkbox') return;
-            
-            checkbox.checked = !checkbox.checked;
-            visualCheckbox.classList.toggle('checked', checkbox.checked);
-        });
-        
-        // Initialize visual state
-        visualCheckbox.classList.toggle('checked', checkbox.checked);
-    });
+// Staff selection functions
+function toggleStaff(element, userId) {
+    const checkbox = document.getElementById('user_' + userId);
+    checkbox.checked = !checkbox.checked;
+    element.classList.toggle('checked', checkbox.checked);
 }
 
-function toggleSelectAll() {
-    const staffItems = document.querySelectorAll('.staff-item');
-    const allChecked = Array.from(staffItems).every(item => 
-        item.querySelector('input[type="checkbox"]').checked
-    );
+function selectAllStaff() {
+    const staffCheckboxes = document.querySelectorAll('.staff-checkbox');
+    const allChecked = Array.from(staffCheckboxes).every(cb => cb.classList.contains('checked'));
     
-    staffItems.forEach(item => {
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        const visualCheckbox = item.querySelector('.staff-checkbox');
+    staffCheckboxes.forEach((cb, index) => {
+        const userId = cb.parentElement.querySelector('input[type="checkbox"]').value;
+        const checkbox = document.getElementById('user_' + userId);
         
         checkbox.checked = !allChecked;
-        visualCheckbox.classList.toggle('checked', checkbox.checked);
+        cb.classList.toggle('checked', checkbox.checked);
     });
 }
 
-function toggleSelectAllDays() {
+function selectWeekdays() {
     const weekdays = [1,2,3,4,5]; // Monday to Friday
     const allChecked = weekdays.every(day => {
         const checkbox = document.getElementById('day_' + day);
@@ -1014,74 +1094,11 @@ function toggleSelectAllDays() {
     });
 }
 
-// Validation functions
-function validateSingleShift() {
-    const userId = document.getElementById('user_id').value;
-    const shiftId = document.getElementById('shift_id').value;
-    const date = document.getElementById('assigned_date').value;
-    
-    if (!userId) {
-        alert('Please select a staff member');
-        return false;
-    }
-    
-    if (!shiftId) {
-        alert('Please select a shift');
-        return false;
-    }
-    
-    if (!date) {
-        alert('Please select a date');
-        return false;
-    }
-    
-    return true;
-}
-
-function validateBulkAssignment() {
-    // Check if any staff is selected
-    const selectedStaff = document.querySelectorAll('input[name="user_ids[]"]:checked');
-    if (selectedStaff.length === 0) {
-        alert('Please select at least one staff member');
-        return false;
-    }
-    
-    // Check if shift is selected
-    const shiftId = document.getElementById('bulk_shift_id').value;
-    if (!shiftId) {
-        alert('Please select a shift template');
-        return false;
-    }
-    
-    // Check dates
-    const startDate = document.getElementById('start_date').value;
-    const endDate = document.getElementById('end_date').value;
-    
-    if (!startDate || !endDate) {
-        alert('Please select both start and end dates');
-        return false;
-    }
-    
-    if (new Date(startDate) > new Date(endDate)) {
-        alert('Start date cannot be after end date');
-        return false;
-    }
-    
-    // Check if any day is selected
-    const selectedDays = document.querySelectorAll('input[name="days[]"]:checked');
-    if (selectedDays.length === 0) {
-        alert('Please select at least one day of the week');
-        return false;
-    }
-    
-    return true;
-}
-
 // Update shift status modal
 function updateStatus(userShiftId, currentStatus) {
     document.getElementById('status_user_shift_id').value = userShiftId;
     document.getElementById('status').value = currentStatus;
-    document.getElementById('statusModal').style.display = 'flex';
+    document.getElementById('statusModal').style.display = 'block';
 }
 
 // Close modal
@@ -1096,6 +1113,55 @@ window.addEventListener('click', (e) => {
     const modal = document.getElementById('statusModal');
     if (e.target === modal) {
         modal.style.display = 'none';
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const bulkForm = e.target.closest('form[action*="bulk"]');
+    if (bulkForm) {
+        const selectedStaff = bulkForm.querySelectorAll('input[name="user_ids[]"]:checked');
+        const selectedDays = bulkForm.querySelectorAll('input[name="days[]"]:checked');
+        
+        if (selectedStaff.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one staff member');
+            return false;
+        }
+        
+        if (selectedDays.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one day of the week');
+            return false;
+        }
+    }
+});
+
+// Real-time shift duration display
+const shiftSelect = document.getElementById('shift_id');
+const shiftInfo = document.createElement('div');
+shiftInfo.className = 'shift-info-display';
+shiftInfo.style.marginTop = '0.5rem';
+shiftInfo.style.fontSize = '0.9rem';
+shiftInfo.style.color = '#64748b';
+
+shiftSelect.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+        const color = selectedOption.getAttribute('data-color');
+        const duration = selectedOption.getAttribute('data-duration');
+        
+        shiftInfo.innerHTML = `
+            <span style="display: inline-block; width: 12px; height: 12px; background-color: ${color}; 
+                  border-radius: 3px; margin-right: 0.5rem;"></span>
+            Duration: ${duration}
+        `;
+        
+        if (!this.parentNode.contains(shiftInfo)) {
+            this.parentNode.appendChild(shiftInfo);
+        }
+    } else if (this.parentNode.contains(shiftInfo)) {
+        this.parentNode.removeChild(shiftInfo);
     }
 });
 </script>
