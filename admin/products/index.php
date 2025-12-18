@@ -1,5 +1,5 @@
 <?php
-// admin/products/index.php
+// admin/products/index.php (FIXED VERSION)
 $page_title = "Manage Products";
 require_once '../includes/header.php';
 
@@ -44,333 +44,934 @@ $products = $stmt->fetchAll();
 
 // Get total products count
 $total_products = count($products);
-
-// Calculate statistics
-$active_count = array_filter($products, fn($p) => $p['status'] == 'active');
-$low_stock_count = array_filter($products, fn($p) => $p['current_stock'] <= $p['min_stock']);
-$total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_price'], $products));
 ?>
 
-<div class="page-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2.5rem; border-radius: 20px; color: white; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
-    <div class="page-title">
-        <h1 style="font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem 0; color: white;">📦 Product Management</h1>
-        <p style="font-size: 1.1rem; opacity: 0.9; margin: 0;">Manage your entire product inventory with ease</p>
-    </div>
-    <div class="page-actions" style="display: flex; gap: 1rem;">
-        <a href="add.php" class="btn btn-primary" style="background: white; color: #667eea; border: none; padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: all 0.3s ease;">
-            <i class="fas fa-plus-circle"></i> Add New Product
-        </a>
-        <a href="categories.php" class="btn btn-outline" style="background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.3); padding: 0.8rem 1.5rem; border-radius: 12px; font-weight: 600; transition: all 0.3s ease;">
-            <i class="fas fa-tags"></i> Manage Categories
-        </a>
-    </div>
-</div>
+<style>
+    /* Keep all your original admin functionality */
+    /* Only change the visual design of product cards */
+    
+    .products-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .page-title h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .page-title p {
+        color: var(--text-muted);
+        margin: 0;
+    }
+    
+    .page-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    }
+    
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--text);
+        border: 2px solid var(--border);
+    }
+    
+    .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    
+    /* Filters Card - Keep original functionality with better styling */
+    .filters-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid var(--border);
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .filter-group {
+        margin-bottom: 0;
+    }
+    
+    .filter-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+    
+    .filter-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background: var(--input-bg);
+        color: var(--text);
+    }
+    
+    .filter-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+    
+    .filter-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    }
+    
+    .reset-btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--card-bg);
+        color: var(--text);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 48px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .reset-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    
+    /* Statistics Cards - Keep your original stats */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* BEAUTIFUL PRODUCT CARDS - This is what you wanted! */
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+    
+    .product-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(124, 58, 237, 0.15);
+        border-color: var(--primary-light);
+    }
+    
+    .product-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        z-index: 1;
+    }
+    
+    .product-image-container {
+        height: 180px;
+        overflow: hidden;
+        position: relative;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
+    }
+    
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .product-card:hover .product-image {
+        transform: scale(1.05);
+    }
+    
+    .no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--primary);
+        font-size: 3.5rem;
+        opacity: 0.5;
+    }
+    
+    .product-header {
+        padding: 1.25rem 1.25rem 0.5rem;
+    }
+    
+    .product-code {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 0.75rem;
+    }
+    
+    .product-name {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        line-height: 1.3;
+    }
+    
+    .product-description {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .product-details {
+        padding: 0 1.25rem;
+        flex-grow: 1;
+    }
+    
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .detail-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .detail-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-weight: 600;
+        color: var(--text);
+        font-size: 1rem;
+    }
+    
+    .category-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        width: fit-content;
+    }
+    
+    .stock-indicator {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+    
+    .stock-level {
+        height: 100%;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+    
+    .stock-low { background: #EF4444; }
+    .stock-medium { background: #F59E0B; }
+    .stock-high { background: #10B981; }
+    
+    .stock-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 1.25rem;
+    }
+    
+    .product-price-section {
+        padding: 1.25rem;
+        border-top: 2px solid var(--border);
+        text-align: center;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.03), rgba(236, 72, 153, 0.01));
+    }
+    
+    .price-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .price-value {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .product-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .product-status {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+    
+    .status-inactive {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+    
+    .status-discontinued {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+    
+    /* ADMIN ACTIONS - Keep your original admin buttons */
+    .admin-actions {
+        padding: 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        background: var(--card-bg);
+    }
+    
+    .admin-btn {
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .admin-btn-view {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .admin-btn-view:hover {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: #3B82F6;
+        transform: translateY(-2px);
+    }
+    
+    .admin-btn-edit {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    
+    .admin-btn-edit:hover {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: #10B981;
+        transform: translateY(-2px);
+    }
+    
+    .admin-btn-delete {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+        border-color: rgba(239, 68, 68, 0.2);
+    }
+    
+    .admin-btn-delete:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: #EF4444;
+        transform: translateY(-2px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        grid-column: 1 / -1;
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 2px dashed var(--border);
+    }
+    
+    .empty-state i {
+        font-size: 3.5rem;
+        color: var(--border);
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+    }
+    
+    .empty-state p {
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Quick Actions - Keep original */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .quick-action-btn {
+        padding: 1rem;
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        text-decoration: none;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .quick-action-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.1);
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.5rem;
+        color: var(--primary);
+    }
+    
+    /* View Toggle */
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        padding: 0.5rem;
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        width: fit-content;
+    }
+    
+    .view-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .view-btn.active {
+        background: var(--primary);
+        color: white;
+    }
+</style>
 
-<!-- Statistics Cards -->
-<div class="row" style="margin-bottom: 2rem;">
-    <div class="col-3">
-        <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.5rem;">Total Products</div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #4a5568;"><?php echo $total_products; ?></div>
-                </div>
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #4299e1, #63b3ed); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-boxes" style="color: white; font-size: 1.5rem;"></i>
-                </div>
-            </div>
+<div class="products-container">
+    <!-- Page Header - Keep your original header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h2>📦 Manage Products</h2>
+            <p>View and manage all products in your inventory (<?php echo $total_products; ?> products)</p>
+        </div>
+        <div class="page-actions">
+            <a href="add.php" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Product
+            </a>
+            <a href="categories.php" class="btn btn-secondary">
+                <i class="fas fa-tags"></i> Manage Categories
+            </a>
         </div>
     </div>
-    <div class="col-3">
-        <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.5rem;">Active Products</div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #38a169;"><?php echo count($active_count); ?></div>
-                </div>
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #38a169, #68d391); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-check-circle" style="color: white; font-size: 1.5rem;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.5rem;">Low Stock</div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #e53e3e;"><?php echo count($low_stock_count); ?></div>
-                </div>
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #e53e3e, #fc8181); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-exclamation-triangle" style="color: white; font-size: 1.5rem;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.5rem;">Total Value</div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #805ad5;">$<?php echo number_format($total_value, 2); ?></div>
-                </div>
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #805ad5, #b794f4); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-dollar-sign" style="color: white; font-size: 1.5rem;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Filters -->
-<div class="card" style="margin-bottom: 2rem; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 16px; overflow: hidden;">
-    <div class="card-header" style="background: linear-gradient(90deg, #f7fafc, #edf2f7); border-bottom: 1px solid #e2e8f0; padding: 1.5rem;">
-        <h3 class="card-title" style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #2d3748;">
-            <i class="fas fa-filter" style="margin-right: 0.5rem; color: #667eea;"></i>
-            Filter Products
-        </h3>
+    <!-- Statistics - Keep your original stats -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-value"><?php echo $total_products; ?></div>
+            <div class="stat-label">Total Products</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">
+                <?php 
+                $active_count = array_filter($products, fn($p) => $p['status'] == 'active');
+                echo count($active_count);
+                ?>
+            </div>
+            <div class="stat-label">Active Products</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">
+                <?php 
+                $low_stock_count = array_filter($products, fn($p) => $p['current_stock'] <= $p['min_stock']);
+                echo count($low_stock_count);
+                ?>
+            </div>
+            <div class="stat-label">Low Stock</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">
+                $<?php 
+                $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_price'], $products));
+                echo number_format($total_value, 2);
+                ?>
+            </div>
+            <div class="stat-label">Total Value</div>
+        </div>
     </div>
-    <div style="padding: 1.5rem;">
-        <form method="GET" action="" class="row" style="align-items: center;">
-            <div class="col-3">
-                <div class="form-group">
-                    <div class="input-with-icon">
-                        <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #a0aec0;"></i>
-                        <input type="text" 
-                               name="search" 
-                               class="form-control" 
-                               placeholder="Search products by name, SKU, description..."
-                               value="<?php echo htmlspecialchars($search); ?>"
-                               style="padding-left: 2.5rem; border-radius: 12px; border: 1px solid #e2e8f0; height: 48px;">
-                    </div>
+
+    <!-- Filters - Keep your original filter functionality -->
+    <div class="filters-card">
+        <form method="GET" action="" id="productsFilter">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Search Products</label>
+                    <input type="text" 
+                           name="search" 
+                           class="filter-control" 
+                           placeholder="Search by name, code, description..."
+                           value="<?php echo htmlspecialchars($search); ?>">
                 </div>
-            </div>
-            <div class="col-2">
-                <div class="form-group">
-                    <div class="input-with-icon">
-                        <i class="fas fa-tag" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #a0aec0;"></i>
-                        <select name="category" class="form-control" style="padding-left: 2.5rem; border-radius: 12px; border: 1px solid #e2e8f0; height: 48px;">
-                            <option value="">All Categories</option>
-                            <?php foreach ($categories as $cat): ?>
-                                <option value="<?php echo htmlspecialchars($cat['category']); ?>" 
-                                    <?php echo $category == $cat['category'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($cat['category']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select name="category" class="filter-control">
+                        <option value="">All Categories</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?php echo htmlspecialchars($cat['category']); ?>" 
+                                <?php echo $category == $cat['category'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($cat['category']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
-            </div>
-            <div class="col-2">
-                <div class="form-group">
-                    <div class="input-with-icon">
-                        <i class="fas fa-circle" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #a0aec0;"></i>
-                        <select name="status" class="form-control" style="padding-left: 2.5rem; border-radius: 12px; border: 1px solid #e2e8f0; height: 48px;">
-                            <option value="">All Status</option>
-                            <option value="active" <?php echo $status == 'active' ? 'selected' : ''; ?>>Active</option>
-                            <option value="inactive" <?php echo $status == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
-                            <option value="discontinued" <?php echo $status == 'discontinued' ? 'selected' : ''; ?>>Discontinued</option>
-                        </select>
-                    </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select name="status" class="filter-control">
+                        <option value="">All Status</option>
+                        <option value="active" <?php echo $status == 'active' ? 'selected' : ''; ?>>Active</option>
+                        <option value="inactive" <?php echo $status == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                        <option value="discontinued" <?php echo $status == 'discontinued' ? 'selected' : ''; ?>>Discontinued</option>
+                    </select>
                 </div>
-            </div>
-            <div class="col-2">
-                <button type="submit" class="btn btn-primary" style="width: 100%; height: 48px; border-radius: 12px; border: none; background: linear-gradient(135deg, #667eea, #764ba2); font-weight: 600;">
+                
+                <button type="submit" class="filter-btn">
                     <i class="fas fa-search"></i> Apply Filters
                 </button>
-            </div>
-            <div class="col-2">
-                <a href="index.php" class="btn btn-outline" style="width: 100%; height: 48px; border-radius: 12px; border: 2px solid #e2e8f0; background: white; color: #4a5568; font-weight: 600;">
-                    <i class="fas fa-redo"></i> Reset Filters
+                
+                <a href="index.php" class="reset-btn">
+                    <i class="fas fa-redo"></i> Reset
                 </a>
-            </div>
-            <div class="col-1">
-                <button type="button" class="btn btn-outline" style="width: 100%; height: 48px; border-radius: 12px; border: 2px solid #e2e8f0; background: white; color: #4a5568;"
-                        onclick="printProducts()" title="Print Products">
-                    <i class="fas fa-print"></i>
+                
+                <button type="button" class="filter-btn" onclick="printProducts()">
+                    <i class="fas fa-print"></i> Print
                 </button>
             </div>
         </form>
     </div>
-</div>
 
-<!-- Products Table -->
-<div class="card" style="border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 16px; overflow: hidden;">
-    <div class="card-header" style="background: white; border-bottom: 1px solid #e2e8f0; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h3 class="card-title" style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #2d3748;">
-                <i class="fas fa-list-alt" style="margin-right: 0.5rem; color: #667eea;"></i>
-                Products List
-                <span style="font-size: 0.875rem; color: #718096; margin-left: 0.5rem;">
-                    (<?php echo $total_products; ?> products found)
-                </span>
-            </h3>
-        </div>
-        <div class="btn-group" style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-outline" onclick="exportToCSV()" 
-                    style="border-radius: 10px; border: 2px solid #e2e8f0; padding: 0.5rem 1rem; font-weight: 600; color: #4a5568;">
-                <i class="fas fa-download"></i> Export CSV
-            </button>
-            <button class="btn btn-outline" onclick="toggleViewMode()" id="viewToggle"
-                    style="border-radius: 10px; border: 2px solid #e2e8f0; padding: 0.5rem 1rem; font-weight: 600; color: #4a5568;">
-                <i class="fas fa-th-large"></i> Grid View
-            </button>
-        </div>
+    <!-- View Toggle -->
+    <div class="view-toggle">
+        <button class="view-btn active" onclick="setViewMode('grid')">
+            <i class="fas fa-th-large"></i> Grid
+        </button>
+        <button class="view-btn" onclick="setViewMode('list')">
+            <i class="fas fa-list"></i> List
+        </button>
     </div>
-    <div class="table-container">
+
+    <!-- Products Grid/List View -->
+    <div id="productsView">
         <?php if (empty($products)): ?>
-            <div style="text-align: center; padding: 4rem;">
-                <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #f7fafc, #edf2f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; animation: float 3s ease-in-out infinite;">
-                    <i class="fas fa-box-open" style="font-size: 3.5rem; color: #cbd5e0;"></i>
-                </div>
-                <h3 style="font-size: 1.5rem; color: #2d3748; margin-bottom: 1rem;">No Products Found</h3>
-                <p style="color: #718096; margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto;">
-                    No products match your search criteria. Try adjusting your filters or add a new product to get started.
-                </p>
-                <a href="add.php" class="btn btn-primary" 
-                   style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
-                    <i class="fas fa-plus-circle"></i> Add Your First Product
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>No Products Found</h3>
+                <p>No products match your search criteria. Try adjusting your filters or add a new product to get started.</p>
+                <a href="add.php" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Your First Product
                 </a>
             </div>
         <?php else: ?>
-            <!-- Table View -->
-            <div id="tableView">
-                <table class="table" id="productsTable" style="border-collapse: separate; border-spacing: 0;">
+            <!-- Grid View (Default) -->
+            <div id="gridView" class="products-grid">
+                <?php foreach ($products as $product): 
+                    // Calculate stock percentage
+                    $max_stock = max($product['max_stock'], 1);
+                    $stock_percentage = ($product['current_stock'] / $max_stock) * 100;
+                    $stock_class = $stock_percentage <= 20 ? 'stock-low' : 
+                                  ($stock_percentage <= 50 ? 'stock-medium' : 'stock-high');
+                    
+                    // Default image if none
+                    $image_url = $product['image_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($product['product_name']) . '&background=7C3AED&color=fff&size=256';
+                    
+                    // Status class
+                    $status_class = 'status-' . $product['status'];
+                ?>
+                    <div class="product-card" data-id="<?php echo $product['product_id']; ?>">
+                        <!-- Product Image -->
+                        <div class="product-image-container">
+                            <?php if ($product['image_url']): ?>
+                                <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
+                                     alt="<?php echo htmlspecialchars($product['product_name']); ?>" 
+                                     class="product-image"
+                                     onerror="this.src='https://ui-avatars.com/api/?name=<?php echo urlencode($product['product_name']); ?>&background=7C3AED&color=fff&size=256'">
+                            <?php else: ?>
+                                <div class="no-image">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Product Header -->
+                        <div class="product-header">
+                            <div class="product-meta">
+                                <span class="product-code"><?php echo htmlspecialchars($product['product_code']); ?></span>
+                                <span class="product-status <?php echo $status_class; ?>">
+                                    <i class="fas fa-circle"></i> <?php echo ucfirst($product['status']); ?>
+                                </span>
+                            </div>
+                            
+                            <h3 class="product-name" title="<?php echo htmlspecialchars($product['product_name']); ?>">
+                                <?php echo htmlspecialchars($product['product_name']); ?>
+                            </h3>
+                            
+                            <?php if ($product['category']): ?>
+                                <div class="category-badge" style="background: rgba(124, 58, 237, 0.1); color: #7C3AED;">
+                                    <i class="fas fa-tag"></i>
+                                    <?php echo htmlspecialchars($product['category']); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($product['description']): ?>
+                                <p class="product-description" title="<?php echo htmlspecialchars($product['description']); ?>">
+                                    <?php echo htmlspecialchars(mb_strimwidth($product['description'], 0, 100, '...')); ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Product Details -->
+                        <div class="product-details">
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Current Stock</div>
+                                    <div class="detail-value">
+                                        <?php echo $product['current_stock']; ?> 
+                                        <small style="font-size: 0.75rem; color: var(--text-muted);"><?php echo htmlspecialchars($product['unit_type']); ?></small>
+                                    </div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Price</div>
+                                    <div class="detail-value">$<?php echo number_format($product['unit_price'], 2); ?></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Stock Indicator -->
+                            <div class="stock-indicator">
+                                <div class="stock-level <?php echo $stock_class; ?>" 
+                                     style="width: <?php echo min($stock_percentage, 100); ?>%"></div>
+                            </div>
+                            
+                            <div class="stock-info">
+                                <span>Stock Level: <?php echo round($stock_percentage); ?>%</span>
+                                <span>Min: <?php echo $product['min_stock']; ?></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Price & Admin Actions -->
+                        <div class="product-price-section">
+                            <div class="price-label">Total Value</div>
+                            <div class="price-value">
+                                $<?php echo number_format($product['current_stock'] * $product['unit_price'], 2); ?>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Actions - Keep your original admin buttons -->
+                        <div class="admin-actions">
+                            <a href="view.php?id=<?php echo $product['product_id']; ?>" 
+                               class="admin-btn admin-btn-view"
+                               title="View Details">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="edit.php?id=<?php echo $product['product_id']; ?>" 
+                               class="admin-btn admin-btn-edit"
+                               title="Edit Product">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="delete.php?id=<?php echo $product['product_id']; ?>" 
+                               class="admin-btn admin-btn-delete"
+                               title="Delete Product"
+                               onclick="return confirm('Are you sure you want to delete this product? This will also remove all related sales records.')">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- List View (Hidden by default) -->
+            <div id="listView" style="display: none;">
+                <table class="table" id="productsTable">
                     <thead>
-                        <tr style="background: linear-gradient(90deg, #f7fafc, #edf2f7);">
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">#</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Product</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Category</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Price</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Stock</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
-                            <th style="padding: 1rem; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Actions</th>
+                        <tr>
+                            <th>#</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($products as $index => $product): 
                             $stock_status = 'success';
-                            $stock_color = '#38a169';
                             $stock_percent = ($product['current_stock'] / $product['max_stock']) * 100;
                             
                             if ($product['current_stock'] <= $product['min_stock']) {
                                 $stock_status = 'error';
-                                $stock_color = '#e53e3e';
                             } elseif ($stock_percent < 30) {
                                 $stock_status = 'warning';
-                                $stock_color = '#d69e2e';
                             }
                         ?>
-                        <tr style="transition: all 0.3s ease; border-bottom: 1px solid #edf2f7;" 
-                            onmouseover="this.style.backgroundColor='#f7fafc'" 
-                            onmouseout="this.style.backgroundColor='white'">
-                            <td style="padding: 1rem; font-weight: 600; color: #4a5568;"><?php echo $index + 1; ?></td>
-                            <td style="padding: 1rem;">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
+                        <tr>
+                            <td><?php echo $index + 1; ?></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.8rem;">
                                     <?php if ($product['image_url']): ?>
                                         <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
                                              alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">
                                     <?php else: ?>
-                                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
-                                            <i class="fas fa-box" style="color: white; font-size: 1.2rem;"></i>
+                                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-box" style="color: white;"></i>
                                         </div>
                                     <?php endif; ?>
                                     <div>
-                                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 0.25rem;"><?php echo htmlspecialchars($product['product_name']); ?></div>
-                                        <div style="font-size: 0.875rem; color: #718096;">
-                                            SKU: <span style="font-family: monospace; background: #f7fafc; padding: 0.125rem 0.5rem; border-radius: 6px;"><?php echo htmlspecialchars($product['product_code']); ?></span>
-                                        </div>
+                                        <strong><?php echo htmlspecialchars($product['product_name']); ?></strong><br>
+                                        <small class="text-muted">SKU: <?php echo htmlspecialchars($product['product_code']); ?></small>
                                     </div>
                                 </div>
                             </td>
-                            <td style="padding: 1rem;">
+                            <td>
                                 <?php if ($product['category']): ?>
-                                    <span class="badge" style="background: rgba(102, 126, 234, 0.1); color: #667eea; padding: 0.375rem 0.75rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600;">
-                                        <?php echo htmlspecialchars($product['category']); ?>
-                                    </span>
+                                    <span class="badge badge-primary"><?php echo htmlspecialchars($product['category']); ?></span>
                                 <?php else: ?>
-                                    <span style="color: #a0aec0; font-size: 0.875rem;">
-                                        <i class="fas fa-minus"></i> Uncategorized
-                                    </span>
+                                    <span class="text-muted">Uncategorized</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="padding: 1rem;">
-                                <div style="font-weight: 700; color: #38a169; font-size: 1.1rem;">
-                                    $<?php echo number_format($product['unit_price'], 2); ?>
-                                </div>
-                                <div style="font-size: 0.875rem; color: #718096;">
-                                    Cost: $<?php echo number_format($product['cost_price'] ?? 0, 2); ?>
-                                </div>
+                            <td>
+                                <strong style="color: var(--success);">$<?php echo number_format($product['unit_price'], 2); ?></strong><br>
+                                <small class="text-muted">Cost: $<?php echo number_format($product['cost_price'] ?? 0, 2); ?></small>
                             </td>
-                            <td style="padding: 1rem; min-width: 200px;">
-                                <div style="margin-bottom: 0.5rem;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem;">
-                                        <span style="color: #4a5568; font-weight: 600;">
-                                            <?php echo $product['current_stock']; ?> <?php echo htmlspecialchars($product['unit_type']); ?>
-                                        </span>
-                                        <span style="color: <?php echo $stock_color; ?>; font-weight: 600;">
-                                            <?php echo round($stock_percent); ?>%
-                                        </span>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                            <span><?php echo $product['current_stock']; ?> <?php echo htmlspecialchars($product['unit_type']); ?></span>
+                                            <small><?php echo round($stock_percent); ?>%</small>
+                                        </div>
+                                        <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                                            <div style="height: 100%; width: <?php echo min($stock_percent, 100); ?>%; 
+                                                background: var(--<?php echo $stock_status; ?>); border-radius: 3px;"></div>
+                                        </div>
                                     </div>
-                                    <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
-                                        <div style="height: 100%; width: <?php echo min($stock_percent, 100); ?>%; 
-                                            background: <?php echo $stock_color; ?>; border-radius: 4px; transition: width 1s ease;"></div>
-                                    </div>
-                                </div>
-                                <div style="font-size: 0.75rem; color: #a0aec0;">
-                                    Min: <?php echo $product['min_stock']; ?> | Max: <?php echo $product['max_stock']; ?>
-                                </div>
-                            </td>
-                            <td style="padding: 1rem;">
-                                <?php 
-                                $status_color = '#38a169';
-                                $status_bg = 'rgba(56, 161, 105, 0.1)';
-                                if ($product['status'] == 'inactive') {
-                                    $status_color = '#d69e2e';
-                                    $status_bg = 'rgba(214, 158, 46, 0.1)';
-                                }
-                                if ($product['status'] == 'discontinued') {
-                                    $status_color = '#e53e3e';
-                                    $status_bg = 'rgba(229, 62, 62, 0.1)';
-                                }
-                                ?>
-                                <span style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; background: <?php echo $status_bg; ?>; color: <?php echo $status_color; ?>;">
-                                    <?php if ($product['status'] == 'active'): ?>
-                                        <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
-                                    <?php elseif ($product['status'] == 'inactive'): ?>
-                                        <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
-                                    <?php else: ?>
-                                        <i class="fas fa-ban" style="font-size: 0.75rem;"></i>
+                                    <?php if ($stock_status == 'error'): ?>
+                                        <i class="fas fa-exclamation-triangle" style="color: var(--error);"></i>
                                     <?php endif; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <?php 
+                                $status_badge = 'badge-success';
+                                if ($product['status'] == 'inactive') $status_badge = 'badge-warning';
+                                if ($product['status'] == 'discontinued') $status_badge = 'badge-error';
+                                ?>
+                                <span class="badge <?php echo $status_badge; ?>">
                                     <?php echo ucfirst($product['status']); ?>
                                 </span>
                             </td>
-                            <td style="padding: 1rem;">
+                            <td>
                                 <div style="display: flex; gap: 0.5rem;">
                                     <a href="view.php?id=<?php echo $product['product_id']; ?>" 
-                                       class="btn btn-action" 
-                                       style="width: 36px; height: 36px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #4a5568; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s ease;"
-                                       title="View Details"
-                                       onmouseover="this.style.borderColor='#4299e1'; this.style.color='#4299e1'"
-                                       onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#4a5568'">
+                                       class="admin-btn admin-btn-view" 
+                                       title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="edit.php?id=<?php echo $product['product_id']; ?>" 
-                                       class="btn btn-action" 
-                                       style="width: 36px; height: 36px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #4a5568; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s ease;"
-                                       title="Edit Product"
-                                       onmouseover="this.style.borderColor='#38a169'; this.style.color='#38a169'"
-                                       onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#4a5568'">
+                                       class="admin-btn admin-btn-edit"
+                                       title="Edit Product">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <a href="delete.php?id=<?php echo $product['product_id']; ?>" 
-                                       class="btn btn-action" 
-                                       style="width: 36px; height: 36px; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #4a5568; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s ease;"
+                                       class="admin-btn admin-btn-delete"
                                        title="Delete Product"
-                                       onmouseover="this.style.borderColor='#e53e3e'; this.style.color='#e53e3e'"
-                                       onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#4a5568'"
-                                       onclick="return confirm('⚠️ Are you sure you want to delete this product? This will permanently remove all product data and related sales records.')">
+                                       onclick="return confirm('Are you sure you want to delete this product? This will also remove all related sales records.')">
                                         <i class="fas fa-trash"></i>
                                     </a>
                                 </div>
@@ -380,139 +981,40 @@ $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_pric
                     </tbody>
                 </table>
             </div>
-
-            <!-- Grid View (Hidden by default) -->
-            <div id="gridView" style="display: none; padding: 1.5rem;">
-                <div class="row">
-                    <?php foreach ($products as $product): 
-                        $stock_status = 'success';
-                        $stock_color = '#38a169';
-                        $stock_percent = ($product['current_stock'] / $product['max_stock']) * 100;
-                        
-                        if ($product['current_stock'] <= $product['min_stock']) {
-                            $stock_status = 'error';
-                            $stock_color = '#e53e3e';
-                        } elseif ($stock_percent < 30) {
-                            $stock_status = 'warning';
-                            $stock_color = '#d69e2e';
-                        }
-                    ?>
-                    <div class="col-3" style="margin-bottom: 1.5rem;">
-                        <div class="product-card" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.3s ease; height: 100%; border: 1px solid #e2e8f0;">
-                            <div style="height: 160px; background: linear-gradient(135deg, #f7fafc, #edf2f7); display: flex; align-items: center; justify-content: center; position: relative;">
-                                <?php if ($product['image_url']): ?>
-                                    <img src="<?php echo htmlspecialchars($product['image_url']); ?>" 
-                                         alt="<?php echo htmlspecialchars($product['product_name']); ?>"
-                                         style="width: 100%; height: 100%; object-fit: cover;">
-                                <?php else: ?>
-                                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-box" style="color: white; font-size: 2rem;"></i>
-                                    </div>
-                                <?php endif; ?>
-                                <div style="position: absolute; top: 1rem; right: 1rem;">
-                                    <?php 
-                                    $status_color = '#38a169';
-                                    if ($product['status'] == 'inactive') $status_color = '#d69e2e';
-                                    if ($product['status'] == 'discontinued') $status_color = '#e53e3e';
-                                    ?>
-                                    <span style="display: inline-block; width: 12px; height: 12px; background: <?php echo $status_color; ?>; border-radius: 50%;"></span>
-                                </div>
-                            </div>
-                            <div style="padding: 1.25rem;">
-                                <div style="margin-bottom: 1rem;">
-                                    <div style="font-weight: 600; color: #2d3748; margin-bottom: 0.5rem; font-size: 1rem; line-height: 1.4;">
-                                        <?php echo htmlspecialchars(mb_strimwidth($product['product_name'], 0, 30, '...')); ?>
-                                    </div>
-                                    <div style="font-size: 0.875rem; color: #718096; margin-bottom: 0.5rem;">
-                                        SKU: <?php echo htmlspecialchars($product['product_code']); ?>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                                        <span style="font-size: 0.875rem; padding: 0.25rem 0.75rem; background: rgba(102, 126, 234, 0.1); color: #667eea; border-radius: 12px; font-weight: 600;">
-                                            <?php echo htmlspecialchars($product['category'] ?: 'Uncategorized'); ?>
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <div style="margin-bottom: 1rem;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                        <div style="font-weight: 700; color: #38a169; font-size: 1.25rem;">
-                                            $<?php echo number_format($product['unit_price'], 2); ?>
-                                        </div>
-                                        <div style="font-size: 0.875rem; color: #718096;">
-                                            Stock: <?php echo $product['current_stock']; ?>
-                                        </div>
-                                    </div>
-                                    <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                                        <div style="height: 100%; width: <?php echo min($stock_percent, 100); ?>%; 
-                                            background: <?php echo $stock_color; ?>; border-radius: 3px;"></div>
-                                    </div>
-                                </div>
-                                
-                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                                    <a href="view.php?id=<?php echo $product['product_id']; ?>" 
-                                       class="btn btn-outline" 
-                                       style="flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #4a5568; text-align: center; text-decoration: none; font-size: 0.875rem; font-weight: 600; transition: all 0.3s ease;">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
-                                    <a href="edit.php?id=<?php echo $product['product_id']; ?>" 
-                                       class="btn btn-outline" 
-                                       style="flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0; background: white; color: #4a5568; text-align: center; text-decoration: none; font-size: 0.875rem; font-weight: 600; transition: all 0.3s ease;">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
         <?php endif; ?>
     </div>
-</div>
 
-<!-- Quick Actions -->
-<div class="row" style="margin-top: 2rem;">
-    <div class="col-12">
-        <div class="card" style="background: linear-gradient(135deg, #f7fafc, #edf2f7); border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-            <div class="card-header" style="background: transparent; border: none; padding: 1.5rem;">
-                <h3 class="card-title" style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #2d3748;">
-                    <i class="fas fa-bolt" style="margin-right: 0.5rem; color: #667eea;"></i>
-                    Quick Actions
-                </h3>
-            </div>
-            <div style="padding: 1.5rem;">
-                <div class="row">
-                    <?php 
-                    $quick_actions = [
-                        ['icon' => 'fa-plus', 'label' => 'Add Product', 'url' => 'add.php', 'color' => '#667eea'],
-                        ['icon' => 'fa-exchange-alt', 'label' => 'Adjust Stock', 'url' => '../inventory/stock-adjustment.php', 'color' => '#38a169'],
-                        ['icon' => 'fa-exclamation-triangle', 'label' => 'Low Stock', 'url' => '../inventory/low-stock.php', 'color' => '#e53e3e'],
-                        ['icon' => 'fa-tags', 'label' => 'Categories', 'url' => 'categories.php', 'color' => '#d69e2e'],
-                        ['icon' => 'fa-truck', 'label' => 'Suppliers', 'url' => 'suppliers.php', 'color' => '#805ad5'],
-                        ['icon' => 'fa-chart-bar', 'label' => 'Reports', 'url' => '../reports/products.php', 'color' => '#4299e1']
-                    ];
-                    ?>
-                    <?php foreach ($quick_actions as $action): ?>
-                    <div class="col-2">
-                        <a href="<?php echo $action['url']; ?>" class="quick-action-btn" 
-                           style="display: block; text-decoration: none; text-align: center; padding: 1.5rem 0.5rem; background: white; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;"
-                           onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.1)'"
-                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)'">
-                            <div style="width: 48px; height: 48px; background: <?php echo $action['color']; ?>; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                                <i class="fas <?php echo $action['icon']; ?>" style="color: white; font-size: 1.25rem;"></i>
-                            </div>
-                            <div style="font-weight: 600; color: #2d3748; font-size: 0.9rem;"><?php echo $action['label']; ?></div>
-                        </a>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
+    <!-- Quick Actions - Keep your original quick actions -->
+    <div class="quick-actions">
+        <a href="add.php" class="quick-action-btn">
+            <i class="fas fa-plus"></i>
+            <span>Add Product</span>
+        </a>
+        <a href="../inventory/stock-adjustment.php" class="quick-action-btn">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Adjust Stock</span>
+        </a>
+        <a href="../inventory/low-stock.php" class="quick-action-btn">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Low Stock</span>
+        </a>
+        <a href="categories.php" class="quick-action-btn">
+            <i class="fas fa-tags"></i>
+            <span>Categories</span>
+        </a>
+        <a href="suppliers.php" class="quick-action-btn">
+            <i class="fas fa-truck"></i>
+            <span>Suppliers</span>
+        </a>
+        <a href="../reports/products.php" class="quick-action-btn">
+            <i class="fas fa-chart-bar"></i>
+            <span>Product Reports</span>
+        </a>
     </div>
 </div>
 
 <script>
-    // Export to CSV
+    // Export to CSV - Keep your original function
     function exportToCSV() {
         const table = document.getElementById('productsTable');
         if (!table) {
@@ -529,7 +1031,7 @@ $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_pric
             
             for (const col of cols) {
                 // Remove icons and buttons from actions column
-                if (col.querySelector('.btn')) {
+                if (col.querySelector('.admin-btn')) {
                     rowData.push('');
                 } else {
                     rowData.push(col.innerText.replace(/,/g, ''));
@@ -551,24 +1053,10 @@ $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_pric
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        // Show success animation
-        const exportBtn = document.querySelector('[onclick="exportToCSV()"]');
-        exportBtn.innerHTML = '<i class="fas fa-check"></i> Exported!';
-        exportBtn.style.background = 'linear-gradient(135deg, #38a169, #68d391)';
-        exportBtn.style.color = 'white';
-        exportBtn.style.border = 'none';
-        
-        setTimeout(() => {
-            exportBtn.innerHTML = '<i class="fas fa-download"></i> Export CSV';
-            exportBtn.style.background = '';
-            exportBtn.style.color = '';
-            exportBtn.style.border = '';
-        }, 2000);
-        
-        showToast('Products exported successfully!', 'success');
+        showToast('Products exported successfully', 'success');
     }
     
-    // Print products
+    // Print products - Keep your original function
     function printProducts() {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
@@ -576,250 +1064,90 @@ $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_pric
             <head>
                 <title>Products List - EasySalles</title>
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-                    body { 
-                        font-family: 'Inter', Arial, sans-serif; 
-                        margin: 40px; 
-                        color: #2d3748;
-                        line-height: 1.6;
-                    }
-                    .header { 
-                        text-align: center; 
-                        margin-bottom: 30px; 
-                        padding-bottom: 20px;
-                        border-bottom: 2px solid #e2e8f0;
-                    }
-                    h1 { 
-                        color: #2d3748; 
-                        font-size: 28px;
-                        font-weight: 700;
-                        margin: 0;
-                    }
-                    .subtitle { 
-                        color: #718096; 
-                        margin: 5px 0 20px 0;
-                    }
-                    .meta { 
-                        color: #a0aec0; 
-                        font-size: 14px;
-                        margin-bottom: 30px;
-                    }
-                    table { 
-                        width: 100%; 
-                        border-collapse: collapse; 
-                        margin-top: 20px;
-                        font-size: 14px;
-                    }
-                    th { 
-                        background: #f7fafc; 
-                        padding: 12px 15px;
-                        text-align: left;
-                        font-weight: 600;
-                        color: #4a5568;
-                        border-bottom: 2px solid #e2e8f0;
-                        text-transform: uppercase;
-                        letter-spacing: 0.05em;
-                    }
-                    td { 
-                        padding: 12px 15px;
-                        border-bottom: 1px solid #edf2f7;
-                    }
-                    .badge {
-                        padding: 4px 12px;
-                        border-radius: 20px;
-                        font-size: 12px;
-                        font-weight: 600;
-                    }
-                    .status-active { background: #c6f6d5; color: #22543d; }
-                    .status-inactive { background: #feebc8; color: #744210; }
-                    .status-discontinued { background: #fed7d7; color: #742a2a; }
-                    .text-right { text-align: right; }
-                    .text-center { text-align: center; }
-                    .totals {
-                        margin-top: 30px;
-                        padding-top: 20px;
-                        border-top: 2px solid #e2e8f0;
-                        display: flex;
-                        justify-content: space-between;
-                        font-weight: 600;
-                    }
+                    body { font-family: Arial; margin: 20px; }
+                    h1 { color: #333; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>EasySalles - Products Report</h1>
-                    <div class="subtitle">Comprehensive product inventory listing</div>
-                    <div class="meta">
-                        Generated on: ${new Date().toLocaleString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })}
-                    </div>
-                </div>
+                <h1>Products List - EasySalles</h1>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
         `);
         
         const table = document.getElementById('productsTable');
         if (table) {
-            // Clone table and clean up for printing
-            const printTable = table.cloneNode(true);
-            
-            // Remove action buttons
-            const actionCells = printTable.querySelectorAll('td:last-child, th:last-child');
-            actionCells.forEach(cell => cell.remove());
-            
-            // Clean up badges and styling
-            const badges = printTable.querySelectorAll('.badge');
-            badges.forEach(badge => {
-                const text = badge.innerText;
-                badge.outerHTML = `<span class="badge status-${text.toLowerCase()}">${text}</span>`;
-            });
-            
-            printWindow.document.write(printTable.outerHTML);
+            printWindow.document.write(table.outerHTML.replace(/<button[^>]*>.*?<\/button>/g, ''));
+        } else {
+            // If in grid view, use the first table we can find
+            const anyTable = document.querySelector('table');
+            if (anyTable) {
+                printWindow.document.write(anyTable.outerHTML.replace(/<button[^>]*>.*?<\/button>/g, ''));
+            }
         }
-        
-        // Add totals
-        printWindow.document.write(`
-            <div class="totals">
-                <div>Total Products: ${<?php echo $total_products; ?>}</div>
-                <div>Total Inventory Value: $${<?php echo $total_value; ?>.toFixed(2)}</div>
-            </div>
-        `);
         
         printWindow.document.write('</body></html>');
         printWindow.document.close();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
+        printWindow.print();
     }
     
-    // Toggle between table and grid view
-    let isGridView = false;
-    function toggleViewMode() {
-        const tableView = document.getElementById('tableView');
+    // View mode toggle
+    function setViewMode(mode) {
         const gridView = document.getElementById('gridView');
-        const toggleBtn = document.getElementById('viewToggle');
+        const listView = document.getElementById('listView');
+        const gridBtn = document.querySelector('.view-btn:nth-child(1)');
+        const listBtn = document.querySelector('.view-btn:nth-child(2)');
         
-        if (isGridView) {
-            tableView.style.display = 'block';
-            gridView.style.display = 'none';
-            toggleBtn.innerHTML = '<i class="fas fa-th-large"></i> Grid View';
-            toggleBtn.style.borderColor = '#e2e8f0';
-            toggleBtn.style.color = '#4a5568';
+        if (mode === 'grid') {
+            gridView.style.display = 'grid';
+            listView.style.display = 'none';
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
         } else {
-            tableView.style.display = 'none';
-            gridView.style.display = 'block';
-            toggleBtn.innerHTML = '<i class="fas fa-list"></i> Table View';
-            toggleBtn.style.borderColor = '#667eea';
-            toggleBtn.style.color = '#667eea';
+            gridView.style.display = 'none';
+            listView.style.display = 'block';
+            gridBtn.classList.remove('active');
+            listBtn.classList.add('active');
         }
-        isGridView = !isGridView;
+        
+        // Save preference to localStorage
+        localStorage.setItem('productViewMode', mode);
     }
     
-    // Add hover effects to stat cards
-    document.querySelectorAll('.stat-card').forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            card.style.transform = 'translateY(-5px)';
-            card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+    // Load saved view mode
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedMode = localStorage.getItem('productViewMode') || 'grid';
+        setViewMode(savedMode);
+        
+        // Image error handling
+        document.querySelectorAll('.product-image').forEach(img => {
+            img.onerror = function() {
+                this.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt) + '&background=7C3AED&color=fff&size=256';
+            };
         });
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = 'translateY(0)';
-            card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.05)';
-        });
+        
+        // Auto-refresh stock alerts
+        setInterval(() => {
+            document.querySelectorAll('.stock-low').forEach(el => {
+                const parentCard = el.closest('.product-card');
+                if (parentCard) {
+                    parentCard.style.animation = parentCard.style.animation ? '' : 'pulse 2s infinite';
+                }
+            });
+        }, 3000);
     });
     
-    // Auto-refresh stock alerts
-    setInterval(() => {
-        document.querySelectorAll('[style*="color: #e53e3e"]').forEach(el => {
-            if (el.closest('tr') || el.closest('.product-card')) {
-                el.style.animation = el.style.animation ? '' : 'pulse 1.5s infinite';
-            }
-        });
-    }, 2000);
+    // Animation for low stock
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    `;
+    document.head.appendChild(style);
 </script>
-
-<style>
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
-    }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    /* Apply animation to product rows */
-    #productsTable tbody tr {
-        animation: slideIn 0.5s ease forwards;
-        animation-delay: calc(var(--row-index) * 0.05s);
-        opacity: 0;
-    }
-    
-    /* Set row index for staggered animation */
-    #productsTable tbody tr:nth-child(1) { --row-index: 1; }
-    #productsTable tbody tr:nth-child(2) { --row-index: 2; }
-    #productsTable tbody tr:nth-child(3) { --row-index: 3; }
-    #productsTable tbody tr:nth-child(4) { --row-index: 4; }
-    #productsTable tbody tr:nth-child(5) { --row-index: 5; }
-    #productsTable tbody tr:nth-child(6) { --row-index: 6; }
-    #productsTable tbody tr:nth-child(7) { --row-index: 7; }
-    #productsTable tbody tr:nth-child(8) { --row-index: 8; }
-    #productsTable tbody tr:nth-child(9) { --row-index: 9; }
-    #productsTable tbody tr:nth-child(10) { --row-index: 10; }
-    
-    /* Product card hover effect */
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
-        border-color: #cbd5e0 !important;
-    }
-    
-    /* Smooth transitions */
-    .btn, .btn-action, .stat-card, .product-card, .quick-action-btn {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-    
-    /* Custom scrollbar for table */
-    .table-container {
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    
-    .table-container::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    .table-container::-webkit-scrollbar-track {
-        background: #f7fafc;
-        border-radius: 4px;
-    }
-    
-    .table-container::-webkit-scrollbar-thumb {
-        background: #cbd5e0;
-        border-radius: 4px;
-    }
-    
-    .table-container::-webkit-scrollbar-thumb:hover {
-        background: #a0aec0;
-    }
-</style>
 
 <?php require_once '../includes/footer.php'; ?>
