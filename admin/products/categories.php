@@ -3,6 +3,11 @@
 $page_title = "Product Categories";
 require_once '../includes/header.php';
 
+// Initialize session messages
+if (!isset($_SESSION['category_messages'])) {
+    $_SESSION['category_messages'] = [];
+}
+
 // Get categories
 $categories = [];
 try {
@@ -39,7 +44,10 @@ try {
             $pdo->exec("ALTER TABLE EASYSALLES_PRODUCTS 
                         MODIFY COLUMN category VARCHAR(100) DEFAULT NULL");
         } catch (PDOException $createError) {
-            die("Error creating categories table: " . $createError->getMessage());
+            $_SESSION['category_messages'][] = [
+                'type' => 'error',
+                'text' => "Error creating categories table: " . $createError->getMessage()
+            ];
         }
     }
 }
@@ -68,14 +76,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 $stmt->execute([$category_name, $description, $color]);
                 
-                $success_message = "Category '$category_name' added successfully!";
-                echo '<script>showToast("' . addslashes($success_message) . '", "success"); setTimeout(function(){ window.location.reload(); }, 1500);</script>';
+                $_SESSION['category_messages'][] = [
+                    'type' => 'success',
+                    'text' => "Category '$category_name' added successfully!"
+                ];
+                
+                // Redirect to avoid form resubmission
+                header("Location: categories.php");
+                exit();
             } else {
-                echo '<script>showToast("Category already exists!", "warning");</script>';
+                $_SESSION['category_messages'][] = [
+                    'type' => 'warning',
+                    'text' => "Category '$category_name' already exists!"
+                ];
             }
         } catch (PDOException $e) {
-            $error_message = "Error adding category: " . $e->getMessage();
-            echo '<script>showToast("' . addslashes($error_message) . '", "error");</script>';
+            $_SESSION['category_messages'][] = [
+                'type' => 'error',
+                'text' => "Error adding category: " . $e->getMessage()
+            ];
         }
     } elseif ($action === 'edit_category' && !empty($_POST['category_id'])) {
         $category_id = $_POST['category_id'];
@@ -101,11 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$category_name, $old_category_name]);
             }
             
-            $success_message = "Category updated successfully!";
-            echo '<script>showToast("' . addslashes($success_message) . '", "success"); setTimeout(function(){ window.location.reload(); }, 1500);</script>';
+            $_SESSION['category_messages'][] = [
+                'type' => 'success',
+                'text' => "Category updated successfully!"
+            ];
+            
+            // Redirect to avoid form resubmission
+            header("Location: categories.php");
+            exit();
         } catch (PDOException $e) {
-            $error_message = "Error updating category: " . $e->getMessage();
-            echo '<script>showToast("' . addslashes($error_message) . '", "error");</script>';
+            $_SESSION['category_messages'][] = [
+                'type' => 'error',
+                'text' => "Error updating category: " . $e->getMessage()
+            ];
         }
     } elseif ($action === 'delete_category' && !empty($_POST['category_id'])) {
         $category_id = $_POST['category_id'];
@@ -124,14 +151,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("DELETE FROM EASYSALLES_CATEGORIES WHERE category_id = ?");
             $stmt->execute([$category_id]);
             
-            $success_message = "Category deleted successfully! Products have been uncategorized.";
-            echo '<script>showToast("' . addslashes($success_message) . '", "success"); setTimeout(function(){ window.location.reload(); }, 1500);</script>';
+            $_SESSION['category_messages'][] = [
+                'type' => 'success',
+                'text' => "Category deleted successfully! Products have been uncategorized."
+            ];
+            
+            // Redirect to avoid form resubmission
+            header("Location: categories.php");
+            exit();
         } catch (PDOException $e) {
-            $error_message = "Error deleting category: " . $e->getMessage();
-            echo '<script>showToast("' . addslashes($error_message) . '", "error");</script>';
+            $_SESSION['category_messages'][] = [
+                'type' => 'error',
+                'text' => "Error deleting category: " . $e->getMessage()
+            ];
         }
     }
 }
+
+// Get and clear messages
+$messages = $_SESSION['category_messages'] ?? [];
+$_SESSION['category_messages'] = [];
 ?>
 
 <div class="page-header">
@@ -148,6 +187,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </button>
     </div>
 </div>
+
+<!-- Display messages -->
+<?php foreach ($messages as $message): ?>
+    <div class="message <?php echo $message['type']; ?>-message" style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 10px; background: var(--<?php echo $message['type']; ?>-light); color: var(--<?php echo $message['type']; ?>);">
+        <i class="fas fa-<?php 
+            echo $message['type'] === 'success' ? 'check-circle' : 
+                 ($message['type'] === 'error' ? 'exclamation-circle' : 
+                 ($message['type'] === 'warning' ? 'exclamation-triangle' : 'info-circle')); 
+        ?>"></i>
+        <?php echo htmlspecialchars($message['text']); ?>
+    </div>
+<?php endforeach; ?>
 
 <?php if (empty($categories)): ?>
     <div class="card">
@@ -480,6 +531,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             showToast('Please enter a category name', 'warning');
             return false;
         }
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
     });
     
     document.getElementById('editCategoryForm').addEventListener('submit', function(e) {
@@ -489,6 +544,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             showToast('Please enter a category name', 'warning');
             return false;
         }
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+    });
+    
+    document.getElementById('deleteCategoryForm').addEventListener('submit', function(e) {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        submitBtn.disabled = true;
+    });
+    
+    // Auto-hide messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('.message');
+        messages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'opacity 0.5s';
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 500);
+            }, 5000);
+        });
+        
+        // Focus on modal inputs when opened
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'style') {
+                    const modal = mutation.target;
+                    if (modal.style.display === 'block') {
+                        const input = modal.querySelector('input[autofocus]');
+                        if (input) {
+                            input.focus();
+                        }
+                    }
+                }
+            });
+        });
+        
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            observer.observe(modal, { attributes: true });
+        });
     });
 </script>
 
@@ -540,6 +642,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     @keyframes modalFadeIn {
         from { opacity: 0; transform: translateY(-20px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Message animations */
+    .message {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 
