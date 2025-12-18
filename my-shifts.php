@@ -185,6 +185,65 @@ $other_staff = $stmt->fetchAll();
         height: 100%;
         background: linear-gradient(135deg, var(--primary), var(--secondary));
     }
+    /* Modal Styles - Add scrollability */
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh; /* Limit maximum height */
+    margin: 2rem auto;
+    position: relative;
+    animation: slideDown 0.4s ease;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Keep this to contain child scrolling */
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.modal-body {
+    padding: 2rem;
+    overflow-y: auto; /* Make body scrollable */
+    flex-grow: 1; /* Allow body to grow */
+    max-height: calc(90vh - 130px); /* Calculate max height (adjust based on header/footer height) */
+}
+
+.modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+/* Optional: Add scrollbar styling for better appearance */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+}
     
     .card-header {
         display: flex;
@@ -1200,6 +1259,38 @@ function requestForShift(userShiftId, shiftDate, shiftId) {
         document.getElementById('start_date').value = shiftDate;
         document.getElementById('end_date').value = shiftDate;
         document.getElementById('shift_id').value = shiftId;
+    }
+}
+
+function openRequestModal(type) {
+    const modal = document.getElementById('requestModal');
+    modal.style.display = 'block';
+    
+    // Scroll to top of modal content when opening
+    setTimeout(() => {
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.scrollTop = 0;
+        }
+    }, 10);
+    
+    if (type) {
+        document.getElementById('request_type').value = type;
+        updateRequestForm();
+    }
+}
+
+function closeRequestModal() {
+    document.getElementById('requestModal').style.display = 'none';
+    // Reset form
+    document.getElementById('requestForm').reset();
+    document.getElementById('request_user_shift_id').value = '';
+    document.getElementById('shiftInfo').style.display = 'none';
+    
+    // Reset scroll position
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.scrollTop = 0;
     }
 }
 
