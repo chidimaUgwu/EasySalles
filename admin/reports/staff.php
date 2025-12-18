@@ -137,16 +137,20 @@ unset($staff); // Break reference
 ?>
 
 <style>
-    /* Reset and base styles */
+   /* Reset and base styles */
     * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
     }
     
-    .single-column-container {
-        width: 80%;
-        /* max-width: 80px; */
+    body {
+        overflow-x: hidden;
+    }
+    
+    .dashboard-container {
+        width: 100%;
+        max-width: 1200px;
         margin: 0 auto;
         padding: 0 1rem;
     }
@@ -164,6 +168,7 @@ unset($staff); // Break reference
         color: var(--text);
         margin-bottom: 0.5rem;
     }
+    
     
     .page-title p {
         color: var(--text-muted);
