@@ -439,7 +439,6 @@ unset($staff); // Break reference
         padding: 1.5rem;
         margin-bottom: 2rem;
         border: 1px solid var(--border);
-        overflow-x: auto;
     }
     
     .performance-table {
@@ -997,7 +996,7 @@ unset($staff); // Break reference
     <div class="performance-section" id="performance-table">
         <h3 class="section-title"><i class="fas fa-table"></i> Staff Performance Details</h3>
         
-        <div style="overflow-x: auto;">
+        <div >
             <?php if (empty($staff_performance)): ?>
                 <div class="empty-state">
                     <i class="fas fa-chart-line"></i>
