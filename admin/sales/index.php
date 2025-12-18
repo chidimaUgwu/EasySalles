@@ -64,10 +64,7 @@ $total_transactions = count($sales);
         <p>View and manage all sales transactions</p>
     </div>
     <div class="page-actions">
-        <a href="create.php" class="btn btn-primary">
-            <i class="fas fa-cash-register"></i> New Sale
-        </a>
-        <a href="reports.php" class="btn btn-secondary" style="margin-left: 0.5rem;">
+        <a href="reports.php" class="btn btn-primary">
             <i class="fas fa-chart-line"></i> Sales Reports
         </a>
     </div>
