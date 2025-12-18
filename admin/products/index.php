@@ -676,12 +676,12 @@ $total_products = count($products);
         </div>
         <div class="stat-card">
             <div class="stat-value">
+                <div class="stat-label">Total Value</div>
                 $<?php 
                 $total_value = array_sum(array_map(fn($p) => $p['current_stock'] * $p['unit_price'], $products));
                 echo number_format($total_value, 2);
                 ?>
             </div>
-            <div class="stat-label">Total Value</div>
         </div>
     </div>
 
@@ -845,9 +845,8 @@ $total_products = count($products);
                         
                         <!-- Price & Admin Actions -->
                         <div class="product-price-section">
-                            <div class="price-label">Total Value</div>
                             <div class="price-value">
-                                <P>Total Value</P>
+                                <strong>Total Value:</strong>
                                 $<?php echo number_format($product['current_stock'] * $product['unit_price'], 2); ?>
                             </div>
                         </div>
