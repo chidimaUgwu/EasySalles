@@ -15,7 +15,7 @@ ini_set('display_errors', 1);
 define('ROOT_PATH', dirname(__DIR__) . '/');
 
 // Include configuration and authentication
-require_once ROOT_PATH . 'config.php';
+require_once . 'config.php';
 require_once ROOT_PATH . 'includes/auth.php';
 
 // Check if user is logged in
