@@ -725,7 +725,7 @@ unset($staff); // Break reference
     
     /* Responsive Design */
     @media (max-width: 768px) {
-        .single-column-container {
+        .dashboard-container {
             padding: 0 0.75rem;
         }
         
@@ -761,6 +761,13 @@ unset($staff); // Break reference
         .performance-table td {
             padding: 0.75rem;
         }
+    }
+
+    .dashboard-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
     }
 </style>
 
