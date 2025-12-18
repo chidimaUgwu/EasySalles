@@ -144,10 +144,6 @@ unset($staff); // Break reference
         box-sizing: border-box;
     }
     
-    body {
-        overflow-x: hidden;
-    }
-    
     .single-column-container {
         width: 80%;
         /* max-width: 80px; */
