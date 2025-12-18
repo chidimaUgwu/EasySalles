@@ -830,20 +830,6 @@ $daily_average = $total_revenue / $date_range_days;
                         </div>
                         
                         <div class="detail-row">
-                            <div class="detail-label">Staff</div>
-                            <div class="detail-value">
-                                <?php if ($sale['full_name']): ?>
-                                    <?php echo htmlspecialchars($sale['full_name']); ?><br>
-                                    <small style="font-size: 0.85rem; color: var(--text-muted);">
-                                        @<?php echo htmlspecialchars($sale['username']); ?>
-                                    </small>
-                                <?php else: ?>
-                                    <span style="color: var(--text-muted);">Unknown</span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-row">
                             <div class="detail-label">Payment Method</div>
                             <div class="detail-value">
                                 <span class="payment-method <?php echo $method_class; ?>">
@@ -944,14 +930,6 @@ $daily_average = $total_revenue / $date_range_days;
                                 <div style="font-weight: 600;"><?php echo htmlspecialchars($sale['customer_name']); ?></div>
                                 <?php if ($sale['customer_phone']): ?>
                                     <small style="color: var(--text-muted);"><?php echo htmlspecialchars($sale['customer_phone']); ?></small>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if ($sale['full_name']): ?>
-                                    <?php echo htmlspecialchars($sale['full_name']); ?><br>
-                                    <small style="color: var(--text-muted);">@<?php echo htmlspecialchars($sale['username']); ?></small>
-                                <?php else: ?>
-                                    <span style="color: var(--text-muted);">Unknown Staff</span>
                                 <?php endif; ?>
                             </td>
                             <td>
