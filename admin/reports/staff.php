@@ -764,7 +764,7 @@ unset($staff); // Break reference
     }
 </style>
 
-<div class="single-column-container">
+<div class="dashboard-container">
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
