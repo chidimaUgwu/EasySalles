@@ -144,6 +144,8 @@ unset($staff); // Break reference
         box-sizing: border-box;
     }
     
+
+    
     .single-column-container {
         width: 80%;
         /* max-width: 80px; */
@@ -762,16 +764,9 @@ unset($staff); // Break reference
             padding: 0.75rem;
         }
     }
-
-    .dashboard-container {
-        width: 100%;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1rem;
-    }
 </style>
 
-<div class="dashboard-container">
+<div class="single-column-container">
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
