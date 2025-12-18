@@ -806,22 +806,6 @@ if (!isset($page_title)) {
                     <span>Admin Panel</span>
                 </div>
             </a>
-            <div>
-                <a href="../../logout.php" style="
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 0.6rem;
-                        padding: 0.75rem 1.2rem;
-                        background: #ffecec;
-                        color: #c0392b;
-                        text-decoration: none;
-                        border-radius: 10px;
-                        font-weight: 600;
-                        border: 1px solid #f5c6cb;
-                    ">
-                    Logout
-                    </a>
-            </div>
         </div>
 
         <div class="sidebar-menu">
@@ -920,6 +904,23 @@ if (!isset($page_title)) {
     <div class="main-content">
         <!-- Top Header -->
         <div class="top-header">
+            <div>
+                <a href="../../logout.php" style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.6rem;
+                        padding: 0.75rem 1.2rem;
+                        background: #ffecec;
+                        color: #c0392b;
+                        text-decoration: none;
+                        border-radius: 10px;
+                        font-weight: 600;
+                        border: 1px solid #f5c6cb;
+                    ">
+                    Logout
+                    </a>
+            </div>
+            
             <div class="header-left">
                 <h1><?php echo htmlspecialchars($page_title); ?></h1>
             </div>
