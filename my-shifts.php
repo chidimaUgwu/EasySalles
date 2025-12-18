@@ -5,8 +5,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // staff/shifts/my-shifts.php
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . 'config.php';
+require_once __DIR__ . 'includes/auth.php';
 require_login();
 
 // Redirect admin to admin dashboard
