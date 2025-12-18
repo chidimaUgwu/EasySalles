@@ -911,7 +911,7 @@ if (!isset($page_title)) {
 
             <div class="header-right">
                 <div>
-                <a href="../../logout.php" style="
+                <a href="logout.php" style="
                         display: inline-flex;
                         align-items: center;
                         gap: 0.6rem;
@@ -927,7 +927,7 @@ if (!isset($page_title)) {
                     </a>
             </div>
             <div>
-                
+
             </div>
                 <button class="btn btn-outline menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
