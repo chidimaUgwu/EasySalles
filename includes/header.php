@@ -401,8 +401,8 @@ if (session_status() === PHP_SESSION_NONE) {
             <!-- Navigation -->
             <nav class="main-nav" id="mainNav">
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="<?php echo $_SESSION['role'] == 1 ? 'admin-dashboard.php' : 'staff-dashboard.php'; ?>" 
-                       class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == ($_SESSION['role'] == 1 ? 'admin-dashboard.php' : 'staff-dashboard.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo $_SESSION['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php'; ?>" 
+                       class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == ($_SESSION['role'] == 1 ? 'admin/index.php' : 'staff-dashboard.php') ? 'active' : ''; ?>">
                         <i class="fas fa-chart-line"></i>
                         <span>Dashboard</span>
                     </a>
@@ -419,6 +419,11 @@ if (session_status() === PHP_SESSION_NONE) {
                        class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'sales-list.php' ? 'active' : ''; ?>">
                         <i class="fas fa-list"></i>
                         <span>Sales</span>
+                    </a>
+                    <a href="my-shifts.php" 
+                           class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'my-shifts.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-calendar"></i>
+                            <span>My Shifts</span>
                     </a>
 
                     <a href="products.php" 
@@ -551,3 +556,4 @@ if (session_status() === PHP_SESSION_NONE) {
             });
         });
     </script>
+
