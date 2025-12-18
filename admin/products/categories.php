@@ -1,6 +1,10 @@
 <?php
 // admin/products/categories.php
 $page_title = "Product Categories";
+
+// Start output buffering to capture output
+ob_start();
+
 require_once '../includes/header.php';
 
 // Initialize session messages
@@ -55,6 +59,7 @@ try {
 // Handle category actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    $redirect = false;
     
     if ($action === 'add_category' && !empty($_POST['category_name'])) {
         $category_name = trim($_POST['category_name']);
@@ -81,9 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'text' => "Category '$category_name' added successfully!"
                 ];
                 
-                // Redirect to avoid form resubmission
-                header("Location: categories.php");
-                exit();
+                $redirect = true;
             } else {
                 $_SESSION['category_messages'][] = [
                     'type' => 'warning',
@@ -125,9 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'text' => "Category updated successfully!"
             ];
             
-            // Redirect to avoid form resubmission
-            header("Location: categories.php");
-            exit();
+            $redirect = true;
         } catch (PDOException $e) {
             $_SESSION['category_messages'][] = [
                 'type' => 'error',
@@ -156,9 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'text' => "Category deleted successfully! Products have been uncategorized."
             ];
             
-            // Redirect to avoid form resubmission
-            header("Location: categories.php");
-            exit();
+            $redirect = true;
         } catch (PDOException $e) {
             $_SESSION['category_messages'][] = [
                 'type' => 'error',
@@ -166,11 +165,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
     }
+    
+    // If redirect is needed, clear output buffer and redirect
+    if ($redirect) {
+        ob_end_clean(); // Clear the output buffer
+        header("Location: categories.php");
+        exit();
+    }
 }
 
 // Get and clear messages
 $messages = $_SESSION['category_messages'] ?? [];
 $_SESSION['category_messages'] = [];
+
+// End output buffering and get the header content
+$header_content = ob_get_clean();
+echo $header_content;
 ?>
 
 <div class="page-header">
