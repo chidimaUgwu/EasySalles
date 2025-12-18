@@ -861,6 +861,22 @@ if (!isset($page_title)) {
                     <span>Sales Reports</span>
                 </a>
             </div>
+
+            <div class="menu-group">
+                <div class="menu-title">Shifts</div>
+                <a href="<?php echo getAdminURL('shifts/index.php'); ?>" class="menu-item <?php echo isActive('directory', 'shifts') ? 'active' : ''; ?>">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Shift Management</span>
+                </a>
+                <a href="<?php echo getAdminURL('shifts/assign.php'); ?>" class="menu-item <?php echo isActive('page', 'assign.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-user-clock"></i>
+                    <span>Assign Shifts</span>
+                </a>
+                <a href="<?php echo getAdminURL('shifts/requests.php'); ?>" class="menu-item <?php echo isActive('page', 'requests.php') ? 'active' : ''; ?>">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>Shift Requests</span>
+                </a>
+            </div>
             
             <div class="menu-group">
                 <div class="menu-title">Reports</div>
