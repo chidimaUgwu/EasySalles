@@ -904,7 +904,13 @@ if (!isset($page_title)) {
     <div class="main-content">
         <!-- Top Header -->
         <div class="top-header">
-            <div>
+            <div class="header-left">
+                <h1><?php echo htmlspecialchars($page_title); ?></h1>
+            </div>
+            
+
+            <div class="header-right">
+                <div>
                 <a href="../../logout.php" style="
                         display: inline-flex;
                         align-items: center;
@@ -920,12 +926,9 @@ if (!isset($page_title)) {
                     Logout
                     </a>
             </div>
-            
-            <div class="header-left">
-                <h1><?php echo htmlspecialchars($page_title); ?></h1>
+            <div>
+                
             </div>
-            
-            <div class="header-right">
                 <button class="btn btn-outline menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
