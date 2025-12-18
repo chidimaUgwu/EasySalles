@@ -132,428 +132,1017 @@ try {
 }
 ?>
 
-<div class="page-header">
-    <div class="page-title">
-        <h2>Reports & Analytics</h2>
-        <p>Comprehensive business insights and performance metrics</p>
-    </div>
-    <div class="page-actions">
-        <button onclick="exportDashboard()" class="btn btn-secondary">
-            <i class="fas fa-download"></i> Export Dashboard
-        </button>
-        <button onclick="refreshDashboard()" class="btn btn-outline" style="margin-left: 0.5rem;">
-            <i class="fas fa-sync-alt"></i> Refresh
-        </button>
-    </div>
-</div>
+<style>
+    /* Reset and base styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        overflow-x: hidden;
+    }
+    
+    .dashboard-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    /* Page Header */
+    .page-header {
+        margin-bottom: 2rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .page-title h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-title p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    .page-actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+    
+    .btn-secondary {
+        background: var(--secondary);
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: var(--secondary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(var(--secondary-rgb), 0.3);
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--text);
+        border: 2px solid var(--border);
+    }
+    
+    .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-2px);
+    }
+    
+    /* Filters Section */
+    .filters-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .section-title i {
+        color: var(--primary);
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-group {
+        margin-bottom: 0;
+    }
+    
+    .filter-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+    
+    .filter-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background: var(--input-bg);
+        color: var(--text);
+    }
+    
+    .filter-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+    
+    /* Summary Stats - Full width grid */
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .stat-content {
+        flex: 1;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0.25rem 0 0 0;
+    }
+    
+    /* Revenue Chart Section - Full width */
+    .chart-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    /* Performance Indicators - Full width */
+    .indicators-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .indicators-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .indicator-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .indicator-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .indicator-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .indicator-info {
+        flex: 1;
+    }
+    
+    .indicator-title {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+    
+    .indicator-status {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    .indicator-value {
+        text-align: right;
+    }
+    
+    .indicator-score {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    /* Top Products - Full width */
+    .products-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .product-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .product-category {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+    }
+    
+    .product-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .units-sold {
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .product-revenue {
+        font-weight: 700;
+        color: var(--success);
+        font-size: 1.1rem;
+    }
+    
+    /* Top Staff - Full width */
+    .staff-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .staff-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .staff-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .staff-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .staff-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .staff-info {
+        flex: 1;
+    }
+    
+    .staff-name {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+    
+    .staff-username {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    .staff-stats {
+        text-align: right;
+    }
+    
+    .staff-sales {
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .staff-revenue {
+        font-weight: 700;
+        color: var(--success);
+        font-size: 1.1rem;
+    }
+    
+    /* Payment Methods - Full width */
+    .payments-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .payments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .payment-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .payment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .payment-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .payment-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .payment-name {
+        font-weight: 600;
+        color: var(--text);
+        flex: 1;
+    }
+    
+    .payment-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .payment-transactions {
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .payment-amount {
+        font-weight: 700;
+        color: var(--success);
+        font-size: 1.1rem;
+    }
+    
+    /* Daily Chart - Full width */
+    .daily-chart-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+    }
+    
+    .daily-chart-container {
+        height: 250px;
+        position: relative;
+    }
+    
+    /* Quick Actions - Full width */
+    .actions-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+    }
+    
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .action-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+        color: var(--text);
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    
+    .action-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        background: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .action-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+        grid-column: 1 / -1;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state h4 {
+        margin-bottom: 0.5rem;
+        color: var(--text-light);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 0 0.75rem;
+        }
+        
+        .page-title h2 {
+            font-size: 1.5rem;
+        }
+        
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .summary-stats {
+            grid-template-columns: 1fr;
+        }
+        
+        .indicators-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .products-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .staff-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .payments-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
 
-<!-- Date Range Filter -->
-<div class="card" style="margin-bottom: 2rem;">
-    <div class="card-header">
-        <h3 class="card-title">Report Period</h3>
+<div class="dashboard-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h2>📊 Reports & Analytics Dashboard</h2>
+            <p>Comprehensive business insights and performance metrics</p>
+        </div>
+        <div class="page-actions">
+            <button onclick="exportDashboard()" class="btn btn-secondary">
+                <i class="fas fa-download"></i> Export Dashboard
+            </button>
+            <button onclick="refreshDashboard()" class="btn btn-outline">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
     </div>
-    <div style="padding: 1.5rem;">
-        <form method="GET" action="" class="row">
-            <div class="col-3">
-                <div class="form-group">
-                    <label class="form-label">Date From</label>
-                    <input type="date" 
-                           name="date_from" 
-                           class="form-control" 
-                           value="<?php echo htmlspecialchars($date_from); ?>"
-                           max="<?php echo date('Y-m-d'); ?>">
-                </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <h3 class="section-title"><i class="fas fa-filter"></i> Report Period Settings</h3>
+        
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label class="filter-label">Date From</label>
+                <input type="date" 
+                       name="date_from" 
+                       class="filter-control" 
+                       value="<?php echo htmlspecialchars($date_from); ?>"
+                       max="<?php echo date('Y-m-d'); ?>">
             </div>
             
-            <div class="col-3">
-                <div class="form-group">
-                    <label class="form-label">Date To</label>
-                    <input type="date" 
-                           name="date_to" 
-                           class="form-control" 
-                           value="<?php echo htmlspecialchars($date_to); ?>"
-                           max="<?php echo date('Y-m-d'); ?>">
-                </div>
+            <div class="filter-group">
+                <label class="filter-label">Date To</label>
+                <input type="date" 
+                       name="date_to" 
+                       class="filter-control" 
+                       value="<?php echo htmlspecialchars($date_to); ?>"
+                       max="<?php echo date('Y-m-d'); ?>">
             </div>
             
-            <div class="col-3">
-                <div class="form-group">
-                    <label class="form-label">Quick Period</label>
-                    <select name="period" class="form-control" onchange="this.form.submit()">
-                        <option value="today" <?php echo $report_period == 'today' ? 'selected' : ''; ?>>Today</option>
-                        <option value="yesterday" <?php echo $report_period == 'yesterday' ? 'selected' : ''; ?>>Yesterday</option>
-                        <option value="week" <?php echo $report_period == 'week' ? 'selected' : ''; ?>>This Week</option>
-                        <option value="month" <?php echo $report_period == 'month' ? 'selected' : ''; ?>>This Month</option>
-                        <option value="quarter" <?php echo $report_period == 'quarter' ? 'selected' : ''; ?>>This Quarter</option>
-                        <option value="year" <?php echo $report_period == 'year' ? 'selected' : ''; ?>>This Year</option>
-                        <option value="last_month" <?php echo $report_period == 'last_month' ? 'selected' : ''; ?>>Last Month</option>
-                        <option value="custom" <?php echo $report_period == 'custom' ? 'selected' : ''; ?>>Custom Range</option>
-                    </select>
-                </div>
+            <div class="filter-group">
+                <label class="filter-label">Quick Period</label>
+                <select name="period" class="filter-control" onchange="this.form.submit()">
+                    <option value="today" <?php echo $report_period == 'today' ? 'selected' : ''; ?>>Today</option>
+                    <option value="yesterday" <?php echo $report_period == 'yesterday' ? 'selected' : ''; ?>>Yesterday</option>
+                    <option value="week" <?php echo $report_period == 'week' ? 'selected' : ''; ?>>This Week</option>
+                    <option value="month" <?php echo $report_period == 'month' ? 'selected' : ''; ?>>This Month</option>
+                    <option value="quarter" <?php echo $report_period == 'quarter' ? 'selected' : ''; ?>>This Quarter</option>
+                    <option value="year" <?php echo $report_period == 'year' ? 'selected' : ''; ?>>This Year</option>
+                    <option value="last_month" <?php echo $report_period == 'last_month' ? 'selected' : ''; ?>>Last Month</option>
+                    <option value="custom" <?php echo $report_period == 'custom' ? 'selected' : ''; ?>>Custom Range</option>
+                </select>
             </div>
-            
-            <div class="col-3" style="display: flex; align-items: flex-end;">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-chart-bar"></i> Update Reports
-                </button>
+        </div>
+        
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-chart-bar"></i> Update Reports
+            </button>
+            <a href="index.php" class="btn btn-outline">
+                <i class="fas fa-redo"></i> Reset
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="summary-stats">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(124, 58, 237, 0.1); color: #7C3AED;">
+                <i class="fas fa-money-bill-wave"></i>
             </div>
-        </form>
+            <div class="stat-content">
+                <h3 class="stat-value">$<?php echo number_format($stats['total_revenue'], 0); ?></h3>
+                <p class="stat-label">Total Revenue</p>
+                <small class="text-muted">
+                    <?php echo date('M d', strtotime($date_from)); ?> - <?php echo date('M d', strtotime($date_to)); ?>
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-value"><?php echo number_format($stats['total_sales']); ?></h3>
+                <p class="stat-label">Total Sales</p>
+                <small class="text-muted">
+                    Avg: $<?php echo number_format($stats['avg_sale'], 2); ?> per sale
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(6, 182, 212, 0.1); color: #06B6D4;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-value"><?php echo number_format($stats['unique_customers']); ?></h3>
+                <p class="stat-label">Unique Customers</p>
+                <small class="text-muted">
+                    <?php echo $stats['active_staff']; ?> active staff
+                </small>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-value"><?php echo number_format($stats['total_products']); ?></h3>
+                <p class="stat-label">Active Products</p>
+                <small class="text-muted" style="color: var(--error);">
+                    <?php echo $stats['low_stock']; ?> low stock alerts
+                </small>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- Key Metrics Dashboard -->
-<div class="stats-grid" style="margin-bottom: 2rem;">
-    <div class="stat-card">
-        <div class="stat-icon" style="background: var(--primary-light); color: var(--primary);">
-            <i class="fas fa-money-bill-wave"></i>
-        </div>
-        <div class="stat-content">
-            <h3>$<?php echo number_format($stats['total_revenue'], 0); ?></h3>
-            <p>Total Revenue</p>
-            <small class="text-muted">
-                <?php echo date('M d', strtotime($date_from)); ?> - <?php echo date('M d', strtotime($date_to)); ?>
-            </small>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="background: var(--success-light); color: var(--success);">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
-        <div class="stat-content">
-            <h3><?php echo number_format($stats['total_sales']); ?></h3>
-            <p>Total Sales</p>
-            <small class="text-muted">
-                Avg: $<?php echo number_format($stats['avg_sale'], 2); ?> per sale
-            </small>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="background: var(--accent-light); color: var(--accent);">
-            <i class="fas fa-users"></i>
-        </div>
-        <div class="stat-content">
-            <h3><?php echo number_format($stats['unique_customers']); ?></h3>
-            <p>Unique Customers</p>
-            <small class="text-muted">
-                <?php echo $stats['active_staff']; ?> active staff
-            </small>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon" style="background: var(--warning-light); color: var(--warning);">
-            <i class="fas fa-box"></i>
-        </div>
-        <div class="stat-content">
-            <h3><?php echo number_format($stats['total_products']); ?></h3>
-            <p>Active Products</p>
-            <small class="text-muted" style="color: var(--error);">
-                <?php echo $stats['low_stock']; ?> low stock alerts
-            </small>
-        </div>
-    </div>
-</div>
-
-<div class="row">
     <!-- Revenue Trend Chart -->
-    <div class="col-8">
-        <div class="card" style="margin-bottom: 1.5rem; height: 400px;">
-            <div class="card-header">
-                <h3 class="card-title">Revenue Trend (Last 6 Months)</h3>
-                <div class="btn-group">
-                    <button onclick="toggleChartType()" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">
-                        <i class="fas fa-exchange-alt"></i>
-                    </button>
-                </div>
-            </div>
-            <div style="padding: 1.5rem; height: calc(100% - 60px);">
-                <canvas id="revenueChart"></canvas>
-            </div>
+    <div class="chart-section">
+        <div class="chart-header">
+            <h3 class="section-title"><i class="fas fa-chart-line"></i> Revenue Trend (Last 6 Months)</h3>
+            <button onclick="toggleChartType()" class="btn btn-outline">
+                <i class="fas fa-exchange-alt"></i> Switch Chart Type
+            </button>
+        </div>
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
         </div>
     </div>
-    
+
     <!-- Performance Indicators -->
-    <div class="col-4">
-        <div class="card" style="height: 400px; overflow-y: auto;">
-            <div class="card-header">
-                <h3 class="card-title">Performance Indicators</h3>
-            </div>
-            <div style="padding: 1.5rem;">
-                <?php 
-                $indicators = [
-                    [
-                        'title' => 'Sales Conversion',
-                        'value' => $stats['total_sales'] > 0 ? 'High' : 'N/A',
-                        'color' => 'var(--success)',
-                        'icon' => 'chart-line',
-                        'trend' => 'up'
-                    ],
-                    [
-                        'title' => 'Customer Retention',
-                        'value' => $stats['unique_customers'] > 50 ? 'Good' : 'Developing',
-                        'color' => 'var(--primary)',
-                        'icon' => 'user-check',
-                        'trend' => 'steady'
-                    ],
-                    [
-                        'title' => 'Inventory Health',
-                        'value' => $stats['low_stock'] == 0 ? 'Excellent' : 'Needs Attention',
-                        'color' => $stats['low_stock'] == 0 ? 'var(--success)' : 'var(--warning)',
-                        'icon' => 'boxes',
-                        'trend' => $stats['low_stock'] == 0 ? 'up' : 'down'
-                    ],
-                    [
-                        'title' => 'Staff Productivity',
-                        'value' => $stats['active_staff'] > 0 ? 'Active' : 'Inactive',
-                        'color' => 'var(--accent)',
-                        'icon' => 'user-tie',
-                        'trend' => 'steady'
-                    ]
-                ];
-                
-                foreach ($indicators as $indicator):
-                ?>
-                <div style="display: flex; align-items: center; justify-content: space-between; 
-                            padding: 1rem; background: var(--bg); border-radius: 10px; margin-bottom: 0.8rem;">
-                    <div style="display: flex; align-items: center; gap: 0.8rem;">
-                        <div style="width: 40px; height: 40px; background: <?php echo $indicator['color']; ?>20; 
-                                  color: <?php echo $indicator['color']; ?>; border-radius: 10px; 
-                                  display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-<?php echo $indicator['icon']; ?>"></i>
-                        </div>
-                        <div>
-                            <strong><?php echo $indicator['title']; ?></strong><br>
-                            <small class="text-muted">Current Status</small>
-                        </div>
+    <div class="indicators-section">
+        <h3 class="section-title"><i class="fas fa-chart-bar"></i> Business Performance Indicators</h3>
+        
+        <div class="indicators-grid">
+            <?php 
+            $indicators = [
+                [
+                    'title' => 'Sales Conversion',
+                    'value' => $stats['total_sales'] > 0 ? 'High' : 'N/A',
+                    'color' => '#10B981',
+                    'icon' => 'chart-line',
+                    'desc' => 'Sales effectiveness'
+                ],
+                [
+                    'title' => 'Customer Retention',
+                    'value' => $stats['unique_customers'] > 50 ? 'Good' : 'Developing',
+                    'color' => '#7C3AED',
+                    'icon' => 'user-check',
+                    'desc' => 'Repeat customers'
+                ],
+                [
+                    'title' => 'Inventory Health',
+                    'value' => $stats['low_stock'] == 0 ? 'Excellent' : 'Needs Attention',
+                    'color' => $stats['low_stock'] == 0 ? '#10B981' : '#F59E0B',
+                    'icon' => 'boxes',
+                    'desc' => 'Stock levels'
+                ],
+                [
+                    'title' => 'Staff Productivity',
+                    'value' => $stats['active_staff'] > 0 ? 'Active' : 'Inactive',
+                    'color' => '#06B6D4',
+                    'icon' => 'user-tie',
+                    'desc' => 'Team performance'
+                ]
+            ];
+            
+            foreach ($indicators as $indicator):
+            ?>
+            <div class="indicator-card">
+                <div class="indicator-icon" style="background: <?php echo $indicator['color']; ?>20; color: <?php echo $indicator['color']; ?>;">
+                    <i class="fas fa-<?php echo $indicator['icon']; ?>"></i>
+                </div>
+                <div class="indicator-info">
+                    <div class="indicator-title"><?php echo $indicator['title']; ?></div>
+                    <div class="indicator-status"><?php echo $indicator['desc']; ?></div>
+                </div>
+                <div class="indicator-value">
+                    <div class="indicator-score" style="color: <?php echo $indicator['color']; ?>;">
+                        <?php echo $indicator['value']; ?>
                     </div>
-                    <div style="text-align: right;">
-                        <span style="color: <?php echo $indicator['color']; ?>; font-weight: 600;">
-                            <?php echo $indicator['value']; ?>
-                        </span><br>
-                        <small class="text-muted">
-                            <i class="fas fa-arrow-<?php echo $indicator['trend']; ?>"></i>
-                        </small>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="products-section">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fas fa-star"></i> Top Performing Products</h3>
+            <a href="../sales/reports.php?report_type=product" class="btn btn-outline">
+                View All Products
+            </a>
+        </div>
+        
+        <div class="products-grid">
+            <?php if (empty($top_products)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-chart-bar"></i>
+                    <h4>No Product Data</h4>
+                    <p>No product performance data available for the selected period</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($top_products as $product): ?>
+                <div class="product-card">
+                    <div class="product-name">
+                        <?php echo htmlspecialchars($product['product_name']); ?>
+                    </div>
+                    <div class="product-category">
+                        <?php echo htmlspecialchars($product['category'] ?: 'Uncategorized'); ?>
+                    </div>
+                    <div class="product-stats">
+                        <div class="units-sold">
+                            <?php echo number_format($product['units_sold']); ?> sold
+                        </div>
+                        <div class="product-revenue">
+                            $<?php echo number_format($product['revenue'], 2); ?>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
-</div>
 
-<div class="row" style="margin-top: 1.5rem;">
-    <!-- Top Products -->
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Top Products</h3>
-                <a href="../sales/reports.php?report_type=product" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">
-                    View All
-                </a>
-            </div>
-            <div class="table-container">
-                <?php if (empty($top_products)): ?>
-                    <div style="text-align: center; padding: 2rem;">
-                        <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--border); margin-bottom: 1rem;"></i>
-                        <p class="text-muted">No product data available</p>
-                    </div>
-                <?php else: ?>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Sold</th>
-                                <th>Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($top_products as $product): ?>
-                            <tr>
-                                <td>
-                                    <strong style="font-size: 0.9rem;"><?php echo htmlspecialchars($product['product_name']); ?></strong><br>
-                                    <small class="text-muted"><?php echo htmlspecialchars($product['category'] ?: 'Uncategorized'); ?></small>
-                                </td>
-                                <td><?php echo number_format($product['units_sold']); ?></td>
-                                <td style="color: var(--success); font-weight: 600;">
-                                    $<?php echo number_format($product['revenue'], 2); ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    
     <!-- Top Staff -->
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Top Performing Staff</h3>
-                <a href="../sales/reports.php?report_type=staff" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">
-                    View All
-                </a>
-            </div>
-            <div class="table-container">
-                <?php if (empty($top_staff)): ?>
-                    <div style="text-align: center; padding: 2rem;">
-                        <i class="fas fa-user-chart" style="font-size: 2rem; color: var(--border); margin-bottom: 1rem;"></i>
-                        <p class="text-muted">No staff performance data</p>
-                    </div>
-                <?php else: ?>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Staff</th>
-                                <th>Sales</th>
-                                <th>Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($top_staff as $staff): ?>
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <div class="user-avatar" style="width: 30px; height: 30px; font-size: 0.8rem;">
-                                            <?php echo strtoupper(substr($staff['username'], 0, 1)); ?>
-                                        </div>
-                                        <div>
-                                            <strong style="font-size: 0.9rem;"><?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?></strong>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><?php echo $staff['sales_count']; ?></td>
-                                <td style="color: var(--success); font-weight: 600;">
-                                    $<?php echo number_format($staff['revenue'], 2); ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
+    <div class="staff-section">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fas fa-user-tie"></i> Top Performing Staff</h3>
+            <a href="../sales/reports.php?report_type=staff" class="btn btn-outline">
+                View All Staff
+            </a>
         </div>
-    </div>
-    
-    <!-- Payment Methods -->
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Payment Methods</h3>
-                <a href="../sales/reports.php?report_type=payment_method" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">
-                    View All
-                </a>
-            </div>
-            <div class="table-container">
-                <?php if (empty($payment_methods)): ?>
-                    <div style="text-align: center; padding: 2rem;">
-                        <i class="fas fa-credit-card" style="font-size: 2rem; color: var(--border); margin-bottom: 1rem;"></i>
-                        <p class="text-muted">No payment data available</p>
+        
+        <div class="staff-grid">
+            <?php if (empty($top_staff)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-user-chart"></i>
+                    <h4>No Staff Data</h4>
+                    <p>No staff performance data available for the selected period</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($top_staff as $staff): ?>
+                <div class="staff-card">
+                    <div class="staff-avatar">
+                        <?php echo strtoupper(substr($staff['username'], 0, 1)); ?>
                     </div>
-                <?php else: ?>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Method</th>
-                                <th>Transactions</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($payment_methods as $method): 
-                                $method_icons = [
-                                    'cash' => 'money-bill',
-                                    'card' => 'credit-card',
-                                    'mobile_money' => 'mobile-alt',
-                                    'credit' => 'hand-holding-usd'
-                                ];
-                                $method_colors = [
-                                    'cash' => 'var(--success)',
-                                    'card' => 'var(--primary)',
-                                    'mobile_money' => 'var(--accent)',
-                                    'credit' => 'var(--warning)'
-                                ];
-                            ?>
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <i class="fas fa-<?php echo $method_icons[$method['payment_method']] ?? 'question-circle'; ?>" 
-                                           style="color: <?php echo $method_colors[$method['payment_method']] ?? 'var(--text)'; ?>;"></i>
-                                        <span><?php echo ucfirst(str_replace('_', ' ', $method['payment_method'])); ?></span>
-                                    </div>
-                                </td>
-                                <td><?php echo $method['transactions']; ?></td>
-                                <td style="color: var(--success); font-weight: 600;">
-                                    $<?php echo number_format($method['amount'], 2); ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Daily Sales Trend -->
-<div class="row" style="margin-top: 1.5rem;">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Daily Sales Trend (Last 7 Days)</h3>
-            </div>
-            <div style="padding: 1.5rem; height: 300px;">
-                <canvas id="dailyChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Report Quick Actions -->
-<div class="row" style="margin-top: 2rem;">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Quick Report Access</h3>
-            </div>
-            <div style="padding: 1.5rem;">
-                <div class="row">
-                    <div class="col-2">
-                        <a href="../sales/reports.php" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-chart-line"></i> Sales Reports
-                        </a>
+                    <div class="staff-info">
+                        <div class="staff-name">
+                            <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
+                        </div>
+                        <div class="staff-username">
+                            @<?php echo htmlspecialchars($staff['username']); ?>
+                        </div>
                     </div>
-                    <div class="col-2">
-                        <a href="../inventory/index.php" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-boxes"></i> Inventory Reports
-                        </a>
-                    </div>
-                    <div class="col-2">
-                        <a href="../reports/staff.php" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-user-chart"></i> Staff Reports
-                        </a>
-                    </div>
-                    <div class="col-2">
-                        <a href="../reports/products.php" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-chart-pie"></i> Product Reports
-                        </a>
-                    </div>
-                    <div class="col-2">
-                        <a href="../reports/financial.php" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-money-bill"></i> Financial Reports
-                        </a>
-                    </div>
-                    <div class="col-2">
-                        <button onclick="generateCustomReport()" class="btn btn-primary" style="width: 100%;">
-                            <i class="fas fa-plus"></i> Custom Report
-                        </button>
+                    <div class="staff-stats">
+                        <div class="staff-sales">
+                            <?php echo $staff['sales_count']; ?> sales
+                        </div>
+                        <div class="staff-revenue">
+                            $<?php echo number_format($staff['revenue'], 2); ?>
+                        </div>
                     </div>
                 </div>
-            </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="payments-section">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fas fa-credit-card"></i> Payment Methods Distribution</h3>
+            <a href="../sales/reports.php?report_type=payment_method" class="btn btn-outline">
+                View Details
+            </a>
+        </div>
+        
+        <div class="payments-grid">
+            <?php if (empty($payment_methods)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-credit-card"></i>
+                    <h4>No Payment Data</h4>
+                    <p>No payment data available for the selected period</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($payment_methods as $method): 
+                    $method_icons = [
+                        'cash' => 'money-bill',
+                        'card' => 'credit-card',
+                        'mobile_money' => 'mobile-alt',
+                        'credit' => 'hand-holding-usd'
+                    ];
+                    $method_colors = [
+                        'cash' => '#10B981',
+                        'card' => '#7C3AED',
+                        'mobile_money' => '#06B6D4',
+                        'credit' => '#F59E0B'
+                    ];
+                ?>
+                <div class="payment-card">
+                    <div class="payment-header">
+                        <div class="payment-icon" style="background: <?php echo $method_colors[$method['payment_method']] ?? '#6B7280'; ?>20; color: <?php echo $method_colors[$method['payment_method']] ?? '#6B7280'; ?>;">
+                            <i class="fas fa-<?php echo $method_icons[$method['payment_method']] ?? 'question-circle'; ?>"></i>
+                        </div>
+                        <div class="payment-name">
+                            <?php echo ucfirst(str_replace('_', ' ', $method['payment_method'])); ?>
+                        </div>
+                    </div>
+                    <div class="payment-stats">
+                        <div class="payment-transactions">
+                            <?php echo $method['transactions']; ?> transactions
+                        </div>
+                        <div class="payment-amount">
+                            $<?php echo number_format($method['amount'], 2); ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Daily Sales Trend -->
+    <div class="daily-chart-section">
+        <h3 class="section-title"><i class="fas fa-calendar-day"></i> Daily Sales Trend (Last 7 Days)</h3>
+        <div class="daily-chart-container">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions-section">
+        <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Report Access</h3>
+        
+        <div class="actions-grid">
+            <a href="../sales/reports.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="action-title">Sales Reports</div>
+            </a>
+            
+            <a href="../inventory/index.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="action-title">Inventory Reports</div>
+            </a>
+            
+            <a href="../reports/staff.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-user-chart"></i>
+                </div>
+                <div class="action-title">Staff Reports</div>
+            </a>
+            
+            <a href="../reports/products.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="action-title">Product Reports</div>
+            </a>
+            
+            <a href="../reports/financial.php" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-money-bill"></i>
+                </div>
+                <div class="action-title">Financial Reports</div>
+            </a>
+            
+            <button onclick="generateCustomReport()" class="action-card" style="cursor: pointer; border: none; background: var(--bg);">
+                <div class="action-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="action-title">Custom Report</div>
+            </button>
         </div>
     </div>
 </div>
@@ -574,10 +1163,10 @@ try {
                     datasets: [{
                         label: 'Monthly Revenue',
                         data: <?php echo json_encode($chart_revenue); ?>,
-                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        backgroundColor: currentChartType === 'bar' ? 'rgba(124, 58, 237, 0.6)' : 'rgba(124, 58, 237, 0.1)',
                         borderColor: 'rgba(124, 58, 237, 1)',
-                        borderWidth: 3,
-                        fill: true,
+                        borderWidth: currentChartType === 'bar' ? 1 : 3,
+                        fill: currentChartType === 'line',
                         tension: 0.4
                     }]
                 },
@@ -685,17 +1274,14 @@ try {
     function toggleChartType() {
         if (revenueChart) {
             currentChartType = currentChartType === 'line' ? 'bar' : 'line';
-            revenueChart.config.type = currentChartType;
-            revenueChart.update();
+            revenueChart.destroy();
+            initializeCharts();
             showToast(`Switched to ${currentChartType} chart`, 'info');
         }
     }
     
     function refreshDashboard() {
-        // Refresh data via AJAX
         showToast('Refreshing dashboard data...', 'info');
-        
-        // In production, this would be an AJAX call
         setTimeout(() => {
             location.reload();
         }, 1000);
@@ -723,7 +1309,9 @@ try {
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileDefaultName);
+        document.body.appendChild(linkElement);
         linkElement.click();
+        document.body.removeChild(linkElement);
         
         showToast('Dashboard exported as JSON', 'success');
     }
@@ -787,6 +1375,11 @@ try {
         }, 2000);
     }
     
+    function showToast(message, type = 'info') {
+        // Your existing toast implementation
+        console.log(`${type}: ${message}`);
+    }
+    
     // Auto-refresh every 5 minutes
     setInterval(refreshDashboard, 300000);
     
@@ -795,9 +1388,20 @@ try {
         initializeCharts();
         
         // Auto-update date fields
+        const today = new Date().toISOString().split('T')[0];
         document.querySelectorAll('input[type="date"]').forEach(input => {
-            input.max = '<?php echo date("Y-m-d"); ?>';
+            input.max = today;
         });
+        
+        // Handle form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // Your form submission logic
+                this.submit();
+            });
+        }
     });
 </script>
 
