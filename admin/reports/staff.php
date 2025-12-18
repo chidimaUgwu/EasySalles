@@ -768,81 +768,80 @@ unset($staff); // Break reference
     }
 </style>
 
-<div class="single-column-container">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="page-title">
-            <h2>📊 Staff Performance Reports</h2>
-            <p>Monitor and analyze staff sales performance and productivity</p>
-        </div>
-        <div class="page-actions">
-            <button onclick="exportStaffReport()" class="btn btn-secondary">
-                <i class="fas fa-file-export"></i> Export Report
-            </button>
-            <button onclick="printStaffReport()" class="btn btn-outline">
-                <i class="fas fa-print"></i> Print
-            </button>
-        </div>
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-title">
+        <h2>📊 Staff Performance Reports</h2>
+        <p>Monitor and analyze staff sales performance and productivity</p>
     </div>
+    <div class="page-actions">
+        <button onclick="exportStaffReport()" class="btn btn-secondary">
+            <i class="fas fa-file-export"></i> Export Report
+        </button>
+        <button onclick="printStaffReport()" class="btn btn-outline">
+            <i class="fas fa-print"></i> Print
+        </button>
+    </div>
+</div>
 
-    <!-- Filters -->
-    <div class="filters-section">
-        <h3 class="section-title"><i class="fas fa-filter"></i> Report Filters</h3>
-        
-        <div class="filters-grid">
-            <div class="filter-group">
-                <label class="filter-label">Date From</label>
-                <input type="date" 
-                       name="date_from" 
-                       class="filter-control" 
-                       value="<?php echo htmlspecialchars($date_from); ?>"
-                       max="<?php echo date('Y-m-d'); ?>">
-            </div>
-            
-            <div class="filter-group">
-                <label class="filter-label">Date To</label>
-                <input type="date" 
-                       name="date_to" 
-                       class="filter-control" 
-                       value="<?php echo htmlspecialchars($date_to); ?>"
-                       max="<?php echo date('Y-m-d'); ?>">
-            </div>
-            
-            <div class="filter-group">
-                <label class="filter-label">Staff Member</label>
-                <select name="staff_id" class="filter-control">
-                    <option value="">All Staff</option>
-                    <?php foreach ($all_staff as $staff): ?>
-                    <option value="<?php echo $staff['user_id']; ?>" 
-                        <?php echo $staff_id == $staff['user_id'] ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label class="filter-label">Sort By</label>
-                <select name="sort_by" class="filter-control">
-                    <option value="revenue" <?php echo $sort_by == 'revenue' ? 'selected' : ''; ?>>Revenue (High to Low)</option>
-                    <option value="sales" <?php echo $sort_by == 'sales' ? 'selected' : ''; ?>>Sales Count</option>
-                    <option value="average" <?php echo $sort_by == 'average' ? 'selected' : ''; ?>>Average Sale Value</option>
-                    <option value="customers" <?php echo $sort_by == 'customers' ? 'selected' : ''; ?>>Customers Served</option>
-                    <option value="name" <?php echo $sort_by == 'name' ? 'selected' : ''; ?>>Name (A-Z)</option>
-                    <option value="date" <?php echo $sort_by == 'date' ? 'selected' : ''; ?>>Last Sale Date</option>
-                </select>
-            </div>
+<!-- Filters -->
+<div class="filters-section">
+    <h3 class="section-title"><i class="fas fa-filter"></i> Report Filters</h3>
+    
+    <div class="filters-grid">
+        <div class="filter-group">
+            <label class="filter-label">Date From</label>
+            <input type="date" 
+                    name="date_from" 
+                    class="filter-control" 
+                    value="<?php echo htmlspecialchars($date_from); ?>"
+                    max="<?php echo date('Y-m-d'); ?>">
         </div>
         
-        <div class="filter-actions">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-filter"></i> Apply Filters
-            </button>
-            <a href="staff.php" class="btn btn-outline">
-                <i class="fas fa-redo"></i> Reset
-            </a>
+        <div class="filter-group">
+            <label class="filter-label">Date To</label>
+            <input type="date" 
+                    name="date_to" 
+                    class="filter-control" 
+                    value="<?php echo htmlspecialchars($date_to); ?>"
+                    max="<?php echo date('Y-m-d'); ?>">
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">Staff Member</label>
+            <select name="staff_id" class="filter-control">
+                <option value="">All Staff</option>
+                <?php foreach ($all_staff as $staff): ?>
+                <option value="<?php echo $staff['user_id']; ?>" 
+                    <?php echo $staff_id == $staff['user_id'] ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">Sort By</label>
+            <select name="sort_by" class="filter-control">
+                <option value="revenue" <?php echo $sort_by == 'revenue' ? 'selected' : ''; ?>>Revenue (High to Low)</option>
+                <option value="sales" <?php echo $sort_by == 'sales' ? 'selected' : ''; ?>>Sales Count</option>
+                <option value="average" <?php echo $sort_by == 'average' ? 'selected' : ''; ?>>Average Sale Value</option>
+                <option value="customers" <?php echo $sort_by == 'customers' ? 'selected' : ''; ?>>Customers Served</option>
+                <option value="name" <?php echo $sort_by == 'name' ? 'selected' : ''; ?>>Name (A-Z)</option>
+                <option value="date" <?php echo $sort_by == 'date' ? 'selected' : ''; ?>>Last Sale Date</option>
+            </select>
         </div>
     </div>
+    
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-filter"></i> Apply Filters
+        </button>
+        <a href="staff.php" class="btn btn-outline">
+            <i class="fas fa-redo"></i> Reset
+        </a>
+    </div>
+</div>
 
     <!-- Summary Stats -->
     <div class="summary-stats">
