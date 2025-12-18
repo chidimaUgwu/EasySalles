@@ -144,46 +144,44 @@ unset($staff); // Break reference
         box-sizing: border-box;
     }
     
-    .reports-container {
-        width: 100%;
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 1rem;
+    body {
         overflow-x: hidden;
     }
     
+    .single-column-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    /* Page Header */
     .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         margin-bottom: 2rem;
         padding: 1rem 0;
         border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-        gap: 1rem;
     }
     
     .page-title h2 {
         font-size: 1.8rem;
         font-weight: 700;
         color: var(--text);
-        margin: 0 0 0.5rem 0;
-        line-height: 1.2;
+        margin-bottom: 0.5rem;
     }
     
     .page-title p {
         color: var(--text-muted);
         margin: 0;
         font-size: 0.95rem;
-        line-height: 1.4;
     }
     
     .page-actions {
+        margin-top: 1rem;
         display: flex;
         gap: 0.75rem;
-        flex-wrap: wrap;
     }
     
+    /* Buttons */
     .btn {
         padding: 0.75rem 1.5rem;
         border-radius: 8px;
@@ -196,7 +194,6 @@ unset($staff); // Break reference
         border: none;
         cursor: pointer;
         font-size: 0.95rem;
-        white-space: nowrap;
     }
     
     .btn-secondary {
@@ -222,28 +219,38 @@ unset($staff); // Break reference
         transform: translateY(-2px);
     }
     
-    /* Filters Card */
-    .filters-card {
+    /* Filters Section */
+    .filters-section {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 2rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         border: 1px solid var(--border);
-        width: 100%;
-        overflow: hidden;
+    }
+    
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .section-title i {
+        color: var(--primary);
     }
     
     .filters-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
-        align-items: end;
+        margin-bottom: 1rem;
     }
     
     .filter-group {
         margin-bottom: 0;
-        min-width: 0;
     }
     
     .filter-label {
@@ -263,7 +270,6 @@ unset($staff); // Break reference
         transition: all 0.3s ease;
         background: var(--input-bg);
         color: var(--text);
-        min-width: 0;
     }
     
     .filter-control:focus {
@@ -275,31 +281,26 @@ unset($staff); // Break reference
     .filter-actions {
         display: flex;
         gap: 0.5rem;
-        margin-top: 1rem;
         justify-content: flex-end;
-        flex-wrap: wrap;
     }
     
-    /* Stats Grid */
-    .stats-grid {
+    /* Summary Stats */
+    .summary-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 1rem;
         margin-bottom: 2rem;
-        width: 100%;
     }
     
     .stat-card {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         border: 1px solid var(--border);
-        transition: all 0.3s ease;
         display: flex;
         align-items: center;
         gap: 1rem;
-        min-width: 0;
+        transition: all 0.3s ease;
     }
     
     .stat-card:hover {
@@ -315,12 +316,10 @@ unset($staff); // Break reference
         align-items: center;
         justify-content: center;
         font-size: 1.5rem;
-        flex-shrink: 0;
     }
     
     .stat-content {
         flex: 1;
-        min-width: 0;
     }
     
     .stat-value {
@@ -329,7 +328,6 @@ unset($staff); // Break reference
         color: var(--text);
         margin: 0;
         line-height: 1;
-        word-break: break-word;
     }
     
     .stat-label {
@@ -338,30 +336,13 @@ unset($staff); // Break reference
         margin: 0.25rem 0 0 0;
     }
     
-    /* Performance Layout */
-    .performance-layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    @media (max-width: 1024px) {
-        .performance-layout {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    .chart-card {
+    /* Performance Chart */
+    .chart-section {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
         border: 1px solid var(--border);
-        height: 400px;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
     }
     
     .chart-header {
@@ -371,49 +352,25 @@ unset($staff); // Break reference
         margin-bottom: 1.5rem;
     }
     
-    .chart-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0;
-    }
-    
     .chart-container {
-        flex: 1;
+        height: 300px;
         position: relative;
-        min-height: 200px;
     }
     
-    .rankings-card {
+    /* Rankings */
+    .rankings-section {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
         border: 1px solid var(--border);
-        height: 400px;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-    
-    .rankings-header {
-        margin-bottom: 1.5rem;
-    }
-    
-    .rankings-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0;
     }
     
     .rankings-list {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 200px;
+        display: grid;
+        gap: 1rem;
     }
     
-    /* Rankings Items */
     .ranking-item {
         display: flex;
         align-items: center;
@@ -421,104 +378,69 @@ unset($staff); // Break reference
         padding: 1rem;
         background: var(--bg);
         border-radius: 10px;
-        margin-bottom: 0.8rem;
-        flex-shrink: 0;
+        transition: all 0.3s ease;
     }
     
-    .ranking-item:last-child {
-        margin-bottom: 0;
+    .ranking-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     .ranking-info {
         display: flex;
         align-items: center;
-        gap: 0.8rem;
-        flex: 1;
-        min-width: 0;
+        gap: 1rem;
     }
     
     .ranking-medal {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 1.5rem;
         font-weight: bold;
-        font-size: 1.2rem;
-        flex-shrink: 0;
     }
     
-    .ranking-text {
+    .ranking-details {
         flex: 1;
-        min-width: 0;
     }
     
     .ranking-name {
         font-weight: 600;
         color: var(--text);
         margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
     
-    .ranking-details {
-        font-size: 0.85rem;
+    .ranking-meta {
+        font-size: 0.9rem;
         color: var(--text-muted);
     }
     
     .ranking-stats {
         text-align: right;
-        flex-shrink: 0;
     }
     
     .ranking-revenue {
         color: var(--success);
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.2rem;
         margin-bottom: 0.25rem;
     }
     
     .ranking-sales {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: var(--text-muted);
     }
     
     /* Performance Table */
-    .performance-table-card {
+    .performance-section {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        border: 1px solid var(--border);
         margin-bottom: 2rem;
-        width: 100%;
-        overflow: hidden;
-    }
-    
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-    
-    .table-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0;
-    }
-    
-    .table-subtitle {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-    }
-    
-    .table-wrapper {
-        width: 100%;
+        border: 1px solid var(--border);
         overflow-x: auto;
     }
     
@@ -536,8 +458,6 @@ unset($staff); // Break reference
         color: var(--text);
         border-bottom: 2px solid var(--border);
         font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
         white-space: nowrap;
     }
     
@@ -570,7 +490,6 @@ unset($staff); // Break reference
         justify-content: center;
         font-weight: bold;
         font-size: 1.1rem;
-        flex-shrink: 0;
     }
     
     .staff-details {
@@ -581,9 +500,6 @@ unset($staff); // Break reference
         font-weight: 600;
         color: var(--text);
         margin-bottom: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
     
     .staff-username {
@@ -598,7 +514,6 @@ unset($staff); // Break reference
         border-radius: 20px;
         font-size: 0.85rem;
         font-weight: 600;
-        text-transform: uppercase;
     }
     
     .status-active {
@@ -636,7 +551,6 @@ unset($staff); // Break reference
     .table-actions {
         display: flex;
         gap: 0.3rem;
-        flex-wrap: nowrap;
     }
     
     .table-btn {
@@ -651,7 +565,6 @@ unset($staff); // Break reference
         justify-content: center;
         cursor: pointer;
         transition: all 0.3s ease;
-        flex-shrink: 0;
     }
     
     .table-btn:hover {
@@ -664,20 +577,10 @@ unset($staff); // Break reference
         color: #3B82F6;
     }
     
-    .btn-view:hover {
-        background: rgba(59, 130, 246, 0.2);
-        border-color: #3B82F6;
-    }
-    
     .btn-report {
         background: rgba(124, 58, 237, 0.1);
         border-color: rgba(124, 58, 237, 0.2);
         color: #7C3AED;
-    }
-    
-    .btn-report:hover {
-        background: rgba(124, 58, 237, 0.2);
-        border-color: #7C3AED;
     }
     
     .btn-edit {
@@ -686,53 +589,31 @@ unset($staff); // Break reference
         color: #10B981;
     }
     
-    .btn-edit:hover {
-        background: rgba(16, 185, 129, 0.2);
-        border-color: #10B981;
-    }
-    
-    /* Insights Layout */
-    .insights-layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-top: 2rem;
-    }
-    
-    @media (max-width: 1024px) {
-        .insights-layout {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    .insights-card {
+    /* Insights */
+    .insights-section {
         background: var(--card-bg);
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
         border: 1px solid var(--border);
     }
     
-    .insights-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--text);
-        margin-bottom: 1.5rem;
+    .insights-grid {
+        display: grid;
+        gap: 1.5rem;
     }
     
-    .insights-section {
-        margin-bottom: 1.5rem;
+    .insight-card {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 1.5rem;
     }
     
-    .insights-section:last-child {
-        margin-bottom: 0;
-    }
-    
-    .section-title {
+    .insight-title {
         font-size: 1rem;
         font-weight: 600;
         color: var(--text);
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
     }
     
     /* Progress Bar */
@@ -752,14 +633,21 @@ unset($staff); // Break reference
     }
     
     /* Quick Actions */
-    .quick-actions-grid {
+    .actions-section {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid var(--border);
+    }
+    
+    .actions-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
     
-    .quick-action-btn {
+    .action-btn {
         padding: 1rem;
         background: var(--bg);
         border-radius: 10px;
@@ -772,15 +660,16 @@ unset($staff); // Break reference
         color: var(--text);
         transition: all 0.3s ease;
         cursor: pointer;
+        text-align: center;
     }
     
-    .quick-action-btn:hover {
+    .action-btn:hover {
         border-color: var(--primary);
         color: var(--primary);
         transform: translateY(-3px);
     }
     
-    .quick-action-btn i {
+    .action-btn i {
         font-size: 1.5rem;
         color: var(--primary);
     }
@@ -788,17 +677,12 @@ unset($staff); // Break reference
     .action-label {
         font-size: 0.9rem;
         font-weight: 600;
-        text-align: center;
     }
     
     /* Export Options */
-    .export-options {
-        margin-top: 1.5rem;
-    }
-    
     .export-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         gap: 0.75rem;
     }
     
@@ -845,47 +729,46 @@ unset($staff); // Break reference
     
     /* Responsive Design */
     @media (max-width: 768px) {
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
+        .single-column-container {
+            padding: 0 0.75rem;
         }
         
-        .page-actions {
-            width: 100%;
-            justify-content: flex-start;
-        }
-        
-        .performance-layout {
-            grid-template-columns: 1fr;
-        }
-        
-        .insights-layout {
-            grid-template-columns: 1fr;
+        .page-title h2 {
+            font-size: 1.5rem;
         }
         
         .filters-grid {
             grid-template-columns: 1fr;
         }
         
-        .stats-grid {
+        .summary-stats {
             grid-template-columns: 1fr;
         }
         
-        .quick-actions-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .actions-grid {
+            grid-template-columns: 1fr 1fr;
         }
         
         .export-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(3, 1fr);
         }
         
-        .filter-control {
-            width: 100%;
+        .performance-section {
+            padding: 1rem;
+        }
+        
+        .performance-table {
+            font-size: 0.9rem;
+        }
+        
+        .performance-table th,
+        .performance-table td {
+            padding: 0.75rem;
         }
     }
 </style>
 
-<div class="reports-container">
+<div class="single-column-container">
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
@@ -903,7 +786,9 @@ unset($staff); // Break reference
     </div>
 
     <!-- Filters -->
-    <div class="filters-card">
+    <div class="filters-section">
+        <h3 class="section-title"><i class="fas fa-filter"></i> Report Filters</h3>
+        
         <div class="filters-grid">
             <div class="filter-group">
                 <label class="filter-label">Date From</label>
@@ -960,7 +845,7 @@ unset($staff); // Break reference
     </div>
 
     <!-- Summary Stats -->
-    <div class="stats-grid">
+    <div class="summary-stats">
         <div class="stat-card">
             <div class="stat-icon" style="background: rgba(124, 58, 237, 0.1); color: #7C3AED;">
                 <i class="fas fa-user-tie"></i>
@@ -1022,96 +907,99 @@ unset($staff); // Break reference
         </div>
     </div>
 
-    <!-- Performance Charts & Rankings -->
-    <div class="performance-layout">
-        <div class="chart-card">
-            <div class="chart-header">
-                <h3 class="chart-title">Staff Performance Comparison</h3>
-                <button onclick="togglePerformanceChart()" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">
-                    <i class="fas fa-exchange-alt"></i>
-                </button>
-            </div>
-            <div class="chart-container">
-                <canvas id="performanceChart"></canvas>
-            </div>
+    <!-- Performance Chart -->
+    <div class="chart-section">
+        <div class="chart-header">
+            <h3 class="section-title"><i class="fas fa-chart-line"></i> Performance Comparison</h3>
+            <button onclick="togglePerformanceChart()" class="btn btn-outline">
+                <i class="fas fa-exchange-alt"></i> Switch Chart Type
+            </button>
         </div>
-        
-        <div class="rankings-card">
-            <div class="rankings-header">
-                <h3 class="rankings-title">Performance Rankings</h3>
-            </div>
-            <div class="rankings-list">
-                <?php if (empty($staff_performance)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-user-slash"></i>
-                        <h4>No Performance Data</h4>
-                        <p>No staff performance data available</p>
-                    </div>
-                <?php else: ?>
-                    <?php 
-                    $rank = 1;
-                    foreach ($staff_performance as $staff): 
-                        if ($rank > 5) break; // Show only top 5
-                        
-                        $medals = [
-                            1 => '🥇',
-                            2 => '🥈',
-                            3 => '🥉',
-                            4 => '4',
-                            5 => '5'
-                        ];
-                    ?>
-                    <div class="ranking-item">
-                        <div class="ranking-info">
-                            <div class="ranking-medal" style="background: <?php echo $staff['status'] == 'active' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'; ?>; 
-                                                              color: <?php echo $staff['status'] == 'active' ? '#10B981' : '#EF4444'; ?>;">
-                                <?php echo $medals[$rank] ?? $rank; ?>
-                            </div>
-                            <div class="ranking-text">
-                                <div class="ranking-name">
-                                    <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                                </div>
-                                <div class="ranking-details">
-                                    <?php echo $staff['customers_served']; ?> customers
-                                </div>
-                            </div>
-                        </div>
-                        <div class="ranking-stats">
-                            <div class="ranking-revenue">
-                                $<?php echo number_format($staff['total_revenue'], 0); ?>
-                            </div>
-                            <div class="ranking-sales">
-                                <?php echo $staff['total_sales']; ?> sales
-                            </div>
-                        </div>
-                    </div>
-                    <?php 
-                    $rank++;
-                    endforeach; 
-                    ?>
-                    
-                    <?php if (count($staff_performance) > 5): ?>
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <button onclick="scrollToTable()" class="btn btn-outline" style="width: 100%;">
-                            View All Rankings <i class="fas fa-arrow-down"></i>
-                        </button>
-                    </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
         </div>
     </div>
 
-    <!-- Staff Performance Table -->
-    <div class="performance-table-card" id="performance-table">
-        <div class="table-header">
-            <div>
-                <h3 class="table-title">Staff Performance Details</h3>
-                <p class="table-subtitle">Showing <?php echo count($staff_performance); ?> staff members</p>
-            </div>
-        </div>
+    <!-- Rankings -->
+    <div class="rankings-section">
+        <h3 class="section-title"><i class="fas fa-trophy"></i> Performance Rankings</h3>
         
-        <div class="table-wrapper">
+        <div class="rankings-list">
+            <?php if (empty($staff_performance)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-user-slash"></i>
+                    <h4>No Performance Data</h4>
+                    <p>No staff performance data available</p>
+                </div>
+            <?php else: ?>
+                <?php 
+                $rank = 1;
+                foreach ($staff_performance as $staff): 
+                    if ($rank > 5) break; // Show only top 5
+                    
+                    $medal_colors = [
+                        1 => 'linear-gradient(135deg, #FFD700, #FFA500)',
+                        2 => 'linear-gradient(135deg, #C0C0C0, #A0A0A0)',
+                        3 => 'linear-gradient(135deg, #CD7F32, #B5651D)',
+                        4 => 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                        5 => 'linear-gradient(135deg, #06B6D4, #0891B2)'
+                    ];
+                    
+                    $medal_text_colors = [
+                        1 => '#FFFFFF',
+                        2 => '#FFFFFF',
+                        3 => '#FFFFFF',
+                        4 => '#FFFFFF',
+                        5 => '#FFFFFF'
+                    ];
+                ?>
+                <div class="ranking-item">
+                    <div class="ranking-info">
+                        <div class="ranking-medal" style="background: <?php echo $medal_colors[$rank] ?? 'var(--bg)'; ?>; color: <?php echo $medal_text_colors[$rank] ?? 'var(--text)'; ?>;">
+                            <?php echo $rank; ?>
+                        </div>
+                        <div class="ranking-details">
+                            <div class="ranking-name">
+                                <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
+                            </div>
+                            <div class="ranking-meta">
+                                <?php echo $staff['customers_served']; ?> customers served • 
+                                <span class="status-badge status-<?php echo $staff['status']; ?>" style="font-size: 0.8rem;">
+                                    <?php echo ucfirst($staff['status']); ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-stats">
+                        <div class="ranking-revenue">
+                            $<?php echo number_format($staff['total_revenue'], 0); ?>
+                        </div>
+                        <div class="ranking-sales">
+                            <?php echo $staff['total_sales']; ?> sales
+                        </div>
+                    </div>
+                </div>
+                <?php 
+                $rank++;
+                endforeach; 
+                ?>
+                
+                <?php if (count($staff_performance) > 5): ?>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="#performance-table" class="btn btn-outline" style="width: 100%;">
+                        View All Staff Members <i class="fas fa-arrow-down"></i>
+                    </a>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Performance Table -->
+    <div class="performance-section" id="performance-table">
+        <h3 class="section-title"><i class="fas fa-table"></i> Staff Performance Details</h3>
+        
+        <div style="overflow-x: auto;">
             <?php if (empty($staff_performance)): ?>
                 <div class="empty-state">
                     <i class="fas fa-chart-line"></i>
@@ -1124,7 +1012,6 @@ unset($staff); // Break reference
                         <tr>
                             <th>Staff Member</th>
                             <th>Status</th>
-                            <th>Shift</th>
                             <th>Sales Count</th>
                             <th>Total Revenue</th>
                             <th>Avg Sale Value</th>
@@ -1156,17 +1043,6 @@ unset($staff); // Break reference
                                 <span class="status-badge status-<?php echo $staff['status']; ?>">
                                     <?php echo ucfirst($staff['status']); ?>
                                 </span>
-                            </td>
-                            <td>
-                                <?php if ($staff['shift_start'] && $staff['shift_end']): ?>
-                                    <?php echo date('g:i A', strtotime($staff['shift_start'])); ?> - 
-                                    <?php echo date('g:i A', strtotime($staff['shift_end'])); ?><br>
-                                    <small style="font-size: 0.85rem; color: var(--text-muted);">
-                                        <?php echo $staff['shift_days'] ?: 'Daily'; ?>
-                                    </small>
-                                <?php else: ?>
-                                    <span style="color: var(--text-muted);">Not set</span>
-                                <?php endif; ?>
                             </td>
                             <td>
                                 <strong><?php echo number_format($staff['total_sales']); ?></strong>
@@ -1226,24 +1102,26 @@ unset($staff); // Break reference
         </div>
     </div>
 
-    <!-- Insights & Actions -->
-    <div class="insights-layout">
-        <div class="insights-card">
-            <h3 class="insights-title">Performance Insights</h3>
+    <!-- Insights -->
+    <div class="insights-section">
+        <h3 class="section-title"><i class="fas fa-chart-pie"></i> Performance Insights</h3>
+        
+        <?php if (!empty($staff_performance)): ?>
+            <?php
+            $active_staff = array_filter($staff_performance, fn($s) => ($s['status'] ?? '') === 'active');
+            $inactive_staff = array_filter($staff_performance, fn($s) => ($s['status'] ?? '') !== 'active');
             
-            <?php if (!empty($staff_performance)): ?>
-                <?php
-                $active_staff = array_filter($staff_performance, fn($s) => ($s['status'] ?? '') === 'active');
-                $inactive_staff = array_filter($staff_performance, fn($s) => ($s['status'] ?? '') !== 'active');
-                
-                $top_3_revenue = array_sum(array_slice(array_column($staff_performance, 'total_revenue'), 0, 3));
-                $total_revenue = array_sum(array_column($staff_performance, 'total_revenue'));
-                $top_3_percentage = $total_revenue > 0 ? ($top_3_revenue / $total_revenue) * 100 : 0;
-                ?>
-                
-                <div class="insights-section">
-                    <h4 class="section-title">Revenue Distribution</h4>
-                    <p style="color: var(--text-muted); margin-bottom: 0.5rem;">
+            $top_3_revenue = array_sum(array_slice(array_column($staff_performance, 'total_revenue'), 0, 3));
+            $total_revenue = array_sum(array_column($staff_performance, 'total_revenue'));
+            $top_3_percentage = $total_revenue > 0 ? ($top_3_revenue / $total_revenue) * 100 : 0;
+            
+            $avg_customers_per_staff = count($staff_performance) > 0 ? round(array_sum(array_column($staff_performance, 'customers_served')) / count($staff_performance)) : 0;
+            ?>
+            
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h4 class="insight-title">Revenue Distribution</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 0.75rem;">
                         Top 3 staff members generate 
                         <strong style="color: var(--success);">
                             <?php echo round($top_3_percentage); ?>%
@@ -1254,26 +1132,26 @@ unset($staff); // Break reference
                     </div>
                 </div>
                 
-                <div class="insights-section">
-                    <h4 class="section-title">Performance Metrics</h4>
+                <div class="insight-card">
+                    <h4 class="insight-title">Performance Metrics</h4>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                        <div style="background: var(--bg); padding: 1rem; border-radius: 10px;">
-                            <small style="color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Avg Revenue per Staff</small>
-                            <strong style="color: var(--text); font-size: 1.2rem;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Avg Revenue per Staff</div>
+                            <div style="font-weight: 700; color: var(--text); font-size: 1.2rem;">
                                 $<?php echo number_format($summary['avg_revenue_per_staff'], 0); ?>
-                            </strong>
+                            </div>
                         </div>
-                        <div style="background: var(--bg); padding: 1rem; border-radius: 10px;">
-                            <small style="color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Avg Customers per Staff</small>
-                            <strong style="color: var(--text); font-size: 1.2rem;">
-                                <?php echo count($staff_performance) > 0 ? round(array_sum(array_column($staff_performance, 'customers_served')) / count($staff_performance)) : 0; ?>
-                            </strong>
+                        <div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">Avg Customers per Staff</div>
+                            <div style="font-weight: 700; color: var(--text); font-size: 1.2rem;">
+                                <?php echo $avg_customers_per_staff; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="insights-section">
-                    <h4 class="section-title">Staff Status</h4>
+                <div class="insight-card">
+                    <h4 class="insight-title">Staff Status Overview</h4>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
                         <div style="display: flex; align-items: center; gap: 0.75rem;">
                             <div style="width: 12px; height: 12px; background: var(--success); border-radius: 50%;"></div>
@@ -1295,63 +1173,62 @@ unset($staff); // Break reference
                         </div>
                     </div>
                 </div>
-            <?php else: ?>
-                <div class="empty-state">
-                    <i class="fas fa-chart-pie"></i>
-                    <h4>No Insights Available</h4>
-                    <p>No performance data to generate insights</p>
-                </div>
-            <?php endif; ?>
+            </div>
+        <?php else: ?>
+            <div class="empty-state">
+                <i class="fas fa-chart-pie"></i>
+                <h4>No Insights Available</h4>
+                <p>No performance data to generate insights</p>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions-section">
+        <h3 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+        
+        <div class="actions-grid">
+            <button onclick="createPerformanceIncentive()" class="action-btn">
+                <i class="fas fa-award"></i>
+                <span class="action-label">Create Incentive</span>
+            </button>
+            
+            <button onclick="scheduleStaffTraining()" class="action-btn">
+                <i class="fas fa-graduation-cap"></i>
+                <span class="action-label">Schedule Training</span>
+            </button>
+            
+            <a href="../users/index.php?filter=staff" class="action-btn">
+                <i class="fas fa-user-cog"></i>
+                <span class="action-label">Manage Staff</span>
+            </a>
+            
+            <a href="../schedule/index.php" class="action-btn">
+                <i class="fas fa-calendar-alt"></i>
+                <span class="action-label">View Schedule</span>
+            </a>
         </div>
         
-        <div class="insights-card">
-            <h3 class="insights-title">Quick Actions</h3>
-            
-            <div class="quick-actions-grid">
-                <button onclick="createPerformanceIncentive()" class="quick-action-btn">
-                    <i class="fas fa-award"></i>
-                    <span class="action-label">Create Incentive</span>
-                </button>
-                
-                <button onclick="scheduleStaffTraining()" class="quick-action-btn">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span class="action-label">Schedule Training</span>
-                </button>
-                
-                <a href="../users/index.php?filter=staff" class="quick-action-btn">
-                    <i class="fas fa-user-cog"></i>
-                    <span class="action-label">Manage Staff</span>
-                </a>
-                
-                <a href="../schedule/index.php" class="quick-action-btn">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span class="action-label">View Schedule</span>
-                </a>
-            </div>
-            
-            <div style="margin-top: 1.5rem;">
-                <button onclick="compareStaffPerformance()" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-chart-bar"></i> Compare Performance
-                </button>
-            </div>
-            
-            <div class="export-options">
-                <h4 class="section-title" style="margin-bottom: 1rem;">Export Options</h4>
-                <div class="export-grid">
-                    <button onclick="exportAsPDF()" class="export-btn">
-                        <i class="fas fa-file-pdf"></i>
-                        <span>PDF</span>
-                    </button>
-                    <button onclick="exportAsCSV()" class="export-btn">
-                        <i class="fas fa-file-csv"></i>
-                        <span>CSV</span>
-                    </button>
-                    <button onclick="exportAsExcel()" class="export-btn">
-                        <i class="fas fa-file-excel"></i>
-                        <span>Excel</span>
-                    </button>
-                </div>
-            </div>
+        <div style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+            <button onclick="compareStaffPerformance()" class="btn btn-primary" style="width: 100%;">
+                <i class="fas fa-chart-bar"></i> Compare Staff Performance
+            </button>
+        </div>
+        
+        <h4 class="section-title"><i class="fas fa-download"></i> Export Options</h4>
+        <div class="export-grid">
+            <button onclick="exportAsPDF()" class="export-btn">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF</span>
+            </button>
+            <button onclick="exportAsCSV()" class="export-btn">
+                <i class="fas fa-file-csv"></i>
+                <span>CSV</span>
+            </button>
+            <button onclick="exportAsExcel()" class="export-btn">
+                <i class="fas fa-file-excel"></i>
+                <span>Excel</span>
+            </button>
         </div>
     </div>
 </div>
@@ -1422,41 +1299,18 @@ unset($staff); // Break reference
                             usePointStyle: true,
                             pointStyle: 'circle'
                         }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label.includes('Revenue')) {
-                                    return `${label}: $${context.parsed.y.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })}`;
-                                } else {
-                                    return `${label}: ${context.parsed.y}`;
-                                }
-                            }
-                        }
                     }
                 },
                 scales: {
                     x: {
                         grid: {
                             display: false
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 0
                         }
                     },
                     y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Revenue ($)'
-                        },
                         ticks: {
                             callback: function(value) {
                                 return '$' + value.toLocaleString();
@@ -1468,10 +1322,6 @@ unset($staff); // Break reference
                         type: 'linear',
                         display: true,
                         position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Sales Count'
-                        },
                         grid: {
                             drawOnChartArea: false
                         },
@@ -1521,112 +1371,25 @@ unset($staff); // Break reference
     
     function generateStaffReport(userId) {
         showToast(`Generating report for staff ID: ${userId}...`, 'info');
-        // In production, this would generate a PDF report
         setTimeout(() => {
             showToast('Staff report generated successfully', 'success');
         }, 2000);
     }
     
     function createPerformanceIncentive() {
-        showModal('Create Performance Incentive', `
-            <div class="form-group">
-                <label class="form-label">Incentive Type</label>
-                <select class="form-control">
-                    <option value="bonus">Performance Bonus</option>
-                    <option value="commission">Sales Commission</option>
-                    <option value="award">Recognition Award</option>
-                    <option value="gift">Gift Card</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Target Staff</label>
-                <select class="form-control" multiple>
-                    <?php foreach ($staff_performance as $staff): ?>
-                    <option value="<?php echo $staff['user_id']; ?>">
-                        <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Amount/Value</label>
-                <input type="number" class="form-control" placeholder="0.00" step="0.01" min="0">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Criteria</label>
-                <textarea class="form-control" rows="3" placeholder="Performance criteria..."></textarea>
-            </div>
-        `, 'Create Incentive');
+        alert('Create Incentive feature would open a form here');
     }
     
     function scheduleStaffTraining() {
-        showModal('Schedule Staff Training', `
-            <div class="row">
-                <div class="col-6">
-                    <div class="form-group">
-                        <label class="form-label">Training Date</label>
-                        <input type="date" class="form-control" value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="form-group">
-                        <label class="form-label">Time</label>
-                        <input type="time" class="form-control" value="14:00">
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Training Topic</label>
-                <input type="text" class="form-control" placeholder="e.g., Sales Techniques, Product Knowledge">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Staff Participants</label>
-                <select class="form-control" multiple>
-                    <?php foreach ($staff_performance as $staff): ?>
-                    <option value="<?php echo $staff['user_id']; ?>">
-                        <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        `, 'Schedule Training');
+        alert('Schedule Training feature would open a form here');
     }
     
     function compareStaffPerformance() {
-        showModal('Compare Staff Performance', `
-            <div class="form-group">
-                <label class="form-label">Select Staff to Compare (2-4)</label>
-                <select class="form-control" multiple size="6">
-                    <?php foreach ($staff_performance as $staff): ?>
-                    <option value="<?php echo $staff['user_id']; ?>">
-                        <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Metrics to Compare</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="checkbox" checked> Revenue
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="checkbox" checked> Sales Count
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="checkbox"> Average Sale Value
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 0.3rem;">
-                        <input type="checkbox"> Customers Served
-                    </label>
-                </div>
-            </div>
-        `, 'Compare');
+        alert('Compare Performance feature would open a comparison view here');
     }
     
     function exportAsPDF() {
         showToast('Generating PDF report...', 'info');
-        // PDF generation would be implemented here
         setTimeout(() => {
             showToast('PDF report ready for download', 'success');
         }, 3000);
@@ -1668,55 +1431,9 @@ unset($staff); // Break reference
     
     function exportAsExcel() {
         showToast('Generating Excel report...', 'info');
-        // Excel generation would be implemented here
         setTimeout(() => {
             showToast('Excel report ready for download', 'success');
         }, 3000);
-    }
-    
-    function scrollToTable() {
-        document.getElementById('performance-table').scrollIntoView({
-            behavior: 'smooth'
-        });
-    }
-    
-    function showModal(title, content, actionText) {
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        `;
-        
-        modal.innerHTML = `
-            <div style="background: white; padding: 2rem; border-radius: 20px; width: 500px; max-width: 90vw; max-height: 90vh; overflow-y: auto;">
-                <h3 style="margin-bottom: 1.5rem;">${title}</h3>
-                ${content}
-                <div style="margin-top: 2rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
-                    <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
-                            class="btn btn-outline">
-                        Cancel
-                    </button>
-                    <button onclick="processModalAction('${actionText}')" class="btn btn-primary">
-                        ${actionText}
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-    }
-    
-    function processModalAction(action) {
-        document.querySelector('div[style*="position: fixed"]').remove();
-        showToast(`${action} action completed`, 'success');
     }
     
     function showToast(message, type = 'info') {
@@ -1728,31 +1445,31 @@ unset($staff); // Break reference
     document.addEventListener('DOMContentLoaded', function() {
         initializePerformanceChart();
         
-        // Auto-update date max
+        // Set max dates for date inputs
         const today = new Date().toISOString().split('T')[0];
         document.querySelectorAll('input[type="date"]').forEach(input => {
             input.max = today;
         });
         
-        // Initialize form submission
-        const filterForm = document.querySelector('.filters-card');
-        const applyBtn = filterForm.querySelector('.btn-primary');
-        const dateFrom = filterForm.querySelector('input[name="date_from"]');
-        const dateTo = filterForm.querySelector('input[name="date_to"]');
-        const staffId = filterForm.querySelector('select[name="staff_id"]');
-        const sortBy = filterForm.querySelector('select[name="sort_by"]');
+        // Handle form submission
+        const applyBtn = document.querySelector('.filter-actions .btn-primary');
+        const resetBtn = document.querySelector('.filter-actions .btn-outline');
         
         applyBtn.addEventListener('click', function() {
-            const params = new URLSearchParams();
-            params.append('date_from', dateFrom.value);
-            params.append('date_to', dateTo.value);
-            if (staffId.value) params.append('staff_id', staffId.value);
-            params.append('sort_by', sortBy.value);
+            const formData = new FormData();
+            formData.append('date_from', document.querySelector('input[name="date_from"]').value);
+            formData.append('date_to', document.querySelector('input[name="date_to"]').value);
+            formData.append('staff_id', document.querySelector('select[name="staff_id"]').value);
+            formData.append('sort_by', document.querySelector('select[name="sort_by"]').value);
             
-            window.location.href = `staff.php?${params.toString()}`;
+            const params = new URLSearchParams(formData).toString();
+            window.location.href = `staff.php?${params}`;
         });
         
         // Handle date validation
+        const dateFrom = document.querySelector('input[name="date_from"]');
+        const dateTo = document.querySelector('input[name="date_to"]');
+        
         dateFrom.addEventListener('change', function() {
             if (dateTo.value && new Date(dateTo.value) < new Date(this.value)) {
                 dateTo.value = this.value;
