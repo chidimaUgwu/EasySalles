@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 // admin/shifts/assign.php
 ob_start(); // Start output buffering
 
-require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../config.php';
 require_once ROOT_PATH . '/includes/auth.php';
 require_admin();
 
