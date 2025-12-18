@@ -851,10 +851,7 @@ if (!isset($page_title)) {
             
             <div class="menu-group">
                 <div class="menu-title">Sales</div>
-                <a href="<?php echo getAdminURL('sales/create.php'); ?>" class="menu-item <?php echo isActive('page', 'create.php') ? 'active' : ''; ?>">
-                    <i class="fas fa-cash-register"></i>
-                    <span>New Sale</span>
-                </a>
+                
                 <a href="<?php echo getAdminURL('sales/index.php'); ?>" class="menu-item <?php echo isActive('sales_index') ? 'active' : ''; ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Sales History</span>
