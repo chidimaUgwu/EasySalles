@@ -883,12 +883,7 @@ $daily_average = $total_revenue / $date_range_days;
                            title="View Sale Details">
                             <i class="fas fa-eye"></i> View Details
                         </a>
-                        <a href="receipt.php?id=<?php echo $sale['sale_id']; ?>" 
-                           target="_blank"
-                           class="action-btn action-receipt"
-                           title="Print Receipt">
-                            <i class="fas fa-print"></i> Print Receipt
-                        </a>
+
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -1006,13 +1001,6 @@ $daily_average = $total_revenue / $date_range_days;
                                        style="padding: 0.5rem; width: 40px; height: 40px;"
                                        title="View Details">
                                         <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="receipt.php?id=<?php echo $sale['sale_id']; ?>" 
-                                       target="_blank"
-                                       class="action-btn action-receipt"
-                                       style="padding: 0.5rem; width: 40px; height: 40px;"
-                                       title="Print Receipt">
-                                        <i class="fas fa-print"></i>
                                     </a>
                                 </div>
                             </td>
