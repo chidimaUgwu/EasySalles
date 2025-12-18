@@ -1,15 +1,31 @@
 <?php
-// Turn on full error reporting for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // admin/shifts/assign.php
 ob_start(); // Start output buffering
 
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../../config.php';
 require_once ROOT_PATH . '/includes/auth.php';
 require_admin();
+
+// Get database connection from config
+global $pdo; // Use global if $pdo is defined in config.php
+
+// If $pdo is not available, create a new connection
+if (!isset($pdo) || $pdo === null) {
+    try {
+        $pdo = new PDO(
+            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+            DB_USER,
+            DB_PASS,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]
+        );
+    } catch (PDOException $e) {
+        die("Database connection failed: " . $e->getMessage());
+    }
+}
 
 // Function to safely redirect
 function safe_redirect($url) {
@@ -20,23 +36,33 @@ function safe_redirect($url) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate database connection
+    if (!isset($pdo) || $pdo === null) {
+        $_SESSION['error'] = "Database connection failed!";
+        safe_redirect("assign.php");
+    }
+    
     if (isset($_POST['assign_shift'])) {
         $user_id = $_POST['user_id'];
         $shift_id = $_POST['shift_id'];
         $assigned_date = $_POST['assigned_date'];
-        $notes = $_POST['notes'];
+        $notes = $_POST['notes'] ?? '';
         
-        // Check if shift already assigned for that date
-        $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
-        $stmt->execute([$user_id, $assigned_date]);
-        
-        if ($stmt->rowCount() > 0) {
-            $_SESSION['error'] = "This staff already has a shift assigned for this date!";
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date, notes) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$user_id, $shift_id, $assigned_date, $notes]);
+        try {
+            // Check if shift already assigned for that date
+            $stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
+            $stmt->execute([$user_id, $assigned_date]);
             
-            $_SESSION['success'] = "Shift assigned successfully!";
+            if ($stmt->rowCount() > 0) {
+                $_SESSION['error'] = "This staff already has a shift assigned for this date!";
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date, notes) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$user_id, $shift_id, $assigned_date, $notes]);
+                
+                $_SESSION['success'] = "Shift assigned successfully!";
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Error: " . $e->getMessage();
         }
         safe_redirect("assign.php");
     }
@@ -69,47 +95,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             safe_redirect("assign.php");
         }
         
-        // Generate dates between start and end
-        $period = new DatePeriod(
-            new DateTime($start_date),
-            new DateInterval('P1D'),
-            new DateTime($end_date . ' 23:59:59')
-        );
-        
-        $assigned_count = 0;
-        $errors = [];
-        
-        foreach ($period as $date) {
-            $date_str = $date->format('Y-m-d');
-            $day_of_week = $date->format('w'); // 0 (Sunday) to 6 (Saturday)
+        try {
+            // Generate dates between start and end
+            $period = new DatePeriod(
+                new DateTime($start_date),
+                new DateInterval('P1D'),
+                new DateTime($end_date . ' 23:59:59')
+            );
             
-            // Check if day is selected
-            if (in_array($day_of_week, $days)) {
-                foreach ($user_ids as $user_id) {
-                    // Check if already assigned
-                    $check_stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
-                    $check_stmt->execute([$user_id, $date_str]);
-                    
-                    if ($check_stmt->rowCount() == 0) {
-                        try {
+            $assigned_count = 0;
+            $errors = [];
+            
+            foreach ($period as $date) {
+                $date_str = $date->format('Y-m-d');
+                $day_of_week = $date->format('w'); // 0 (Sunday) to 6 (Saturday)
+                
+                // Check if day is selected
+                if (in_array($day_of_week, $days)) {
+                    foreach ($user_ids as $user_id) {
+                        // Check if already assigned
+                        $check_stmt = $pdo->prepare("SELECT * FROM EASYSALLES_USER_SHIFTS WHERE user_id = ? AND assigned_date = ?");
+                        $check_stmt->execute([$user_id, $date_str]);
+                        
+                        if ($check_stmt->rowCount() == 0) {
                             $stmt = $pdo->prepare("INSERT INTO EASYSALLES_USER_SHIFTS (user_id, shift_id, assigned_date) VALUES (?, ?, ?)");
                             $stmt->execute([$user_id, $shift_id, $date_str]);
                             $assigned_count++;
-                        } catch (Exception $e) {
-                            $errors[] = "Error assigning shift to user $user_id on $date_str: " . $e->getMessage();
                         }
                     }
                 }
             }
-        }
-        
-        if ($assigned_count > 0) {
-            $_SESSION['success'] = "Bulk assignment completed! $assigned_count shifts assigned.";
-            if (!empty($errors)) {
-                $_SESSION['warning'] = implode('<br>', $errors);
+            
+            if ($assigned_count > 0) {
+                $_SESSION['success'] = "Bulk assignment completed! $assigned_count shifts assigned.";
+                if (!empty($errors)) {
+                    $_SESSION['warning'] = implode('<br>', $errors);
+                }
+            } else {
+                $_SESSION['error'] = "No shifts were assigned. All selected staff may already have shifts on the selected dates.";
             }
-        } else {
-            $_SESSION['error'] = "No shifts were assigned. All selected staff may already have shifts on the selected dates.";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Error during bulk assignment: " . $e->getMessage();
         }
         safe_redirect("assign.php");
     }
@@ -119,10 +145,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'];
         $notes = $_POST['update_notes'] ?? '';
         
-        $stmt = $pdo->prepare("UPDATE EASYSALLES_USER_SHIFTS SET status = ?, notes = CONCAT(IFNULL(notes, ''), ?) WHERE user_shift_id = ?");
-        $stmt->execute([$status, "\n" . date('Y-m-d H:i:s') . ': ' . $notes, $user_shift_id]);
-        
-        $_SESSION['success'] = "Shift status updated!";
+        try {
+            $stmt = $pdo->prepare("UPDATE EASYSALLES_USER_SHIFTS SET status = ?, notes = CONCAT(IFNULL(notes, ''), ?) WHERE user_shift_id = ?");
+            $stmt->execute([$status, "\n" . date('Y-m-d H:i:s') . ': ' . $notes, $user_shift_id]);
+            
+            $_SESSION['success'] = "Shift status updated!";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Error updating status: " . $e->getMessage();
+        }
         safe_redirect("assign.php");
     }
     
@@ -134,21 +164,36 @@ $page_title = "Assign Shifts";
 require_once ROOT_PATH . 'admin/includes/header.php';
 
 // Get active staff members
-$stmt = $pdo->query("SELECT * FROM EASYSALLES_USERS WHERE role = 2 AND status = 'active' ORDER BY full_name");
-$staff = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT * FROM EASYSALLES_USERS WHERE role = 2 AND status = 'active' ORDER BY full_name");
+    $staff = $stmt->fetchAll();
+} catch (Exception $e) {
+    $staff = [];
+    $_SESSION['error'] = "Error loading staff: " . $e->getMessage();
+}
 
 // Get shift templates
-$stmt = $pdo->query("SELECT * FROM EASYSALLES_SHIFTS ORDER BY start_time");
-$shifts = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT * FROM EASYSALLES_SHIFTS ORDER BY start_time");
+    $shifts = $stmt->fetchAll();
+} catch (Exception $e) {
+    $shifts = [];
+    $_SESSION['error'] = "Error loading shifts: " . $e->getMessage();
+}
 
 // Get upcoming assigned shifts
-$stmt = $pdo->query("SELECT us.*, u.full_name, u.username, s.shift_name, s.start_time, s.end_time, s.color 
-                     FROM EASYSALLES_USER_SHIFTS us
-                     JOIN EASYSALLES_USERS u ON us.user_id = u.user_id
-                     JOIN EASYSALLES_SHIFTS s ON us.shift_id = s.shift_id
-                     WHERE us.assigned_date >= CURDATE()
-                     ORDER BY us.assigned_date, s.start_time");
-$assigned_shifts = $stmt->fetchAll();
+try {
+    $stmt = $pdo->query("SELECT us.*, u.full_name, u.username, s.shift_name, s.start_time, s.end_time, s.color 
+                         FROM EASYSALLES_USER_SHIFTS us
+                         JOIN EASYSALLES_USERS u ON us.user_id = u.user_id
+                         JOIN EASYSALLES_SHIFTS s ON us.shift_id = s.shift_id
+                         WHERE us.assigned_date >= CURDATE()
+                         ORDER BY us.assigned_date, s.start_time");
+    $assigned_shifts = $stmt->fetchAll();
+} catch (Exception $e) {
+    $assigned_shifts = [];
+    $_SESSION['error'] = "Error loading assigned shifts: " . $e->getMessage();
+}
 ?>
 
 <style>
