@@ -1,24 +1,9 @@
 <?php
-// Turn on full error reporting for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // my-shifts.php
 ob_start(); // Start output buffering
 
-// Turn on error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Get the root directory - adjust based on your structure
-define('ROOT_PATH', dirname(__DIR__) . '/');
-
-// Include configuration and authentication
-require_once . 'config.php';
-require_once ROOT_PATH . 'includes/auth.php';
-
-// Check if user is logged in
+require_once __DIR__ . '/config.php';
+require_once ROOT_PATH . '/includes/auth.php';
 require_login();
 
 // Redirect admin to admin dashboard
@@ -28,28 +13,7 @@ if (isset($_SESSION['role']) && $_SESSION['role'] == 1) {
 }
 
 $page_title = 'My Shifts';
-
-// Check if PDO connection exists
-if (!isset($pdo)) {
-    // Try to create connection if not exists
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-            DB_USER,
-            DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ]
-        );
-    } catch (PDOException $e) {
-        die("Database connection failed: " . $e->getMessage());
-    }
-}
-
-// Include header after establishing connection
-include ROOT_PATH . 'includes/header.php';
+include ROOT_PATH . '/includes/header.php';
 
 $user_id = $_SESSION['user_id'];
 
@@ -111,1458 +75,1206 @@ $stmt->execute([$user_id]);
 $other_staff = $stmt->fetchAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?> - EasySalles</title>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Poppins Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-    :root {
-        --primary: #7C3AED;
-        --secondary: #EC4899;
-        --accent: #06B6D4;
-        --success: #10B981;
-        --warning: #F59E0B;
-        --danger: #EF4444;
-        --info: #3B82F6;
-        
-        --bg: #FFFFFF;
-        --card-bg: #FFFFFF;
-        --text: #1F2937;
-        --text-muted: #6B7280;
-        --border: #E5E7EB;
-        
-        --primary-light: rgba(124, 58, 237, 0.1);
-        --success-light: rgba(16, 185, 129, 0.1);
-        --warning-light: rgba(245, 158, 11, 0.1);
-        --danger-light: rgba(239, 68, 68, 0.1);
-        --info-light: rgba(59, 130, 246, 0.1);
-    }
+<style>
+/* My Shifts Dashboard */
+.my-shifts-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    animation: fadeIn 0.6s ease-out;
+}
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+.dashboard-header {
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease-out;
+}
 
-    body {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-    }
+.welcome-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
 
-    /* Main Container */
-    .main-container {
-        display: flex;
-        min-height: 100vh;
-    }
+.welcome-text h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
 
-    /* Sidebar */
-    .sidebar {
-        width: 250px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 2rem 0;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
+.welcome-text p {
+    color: #64748b;
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
 
-    .logo {
-        padding: 0 2rem 2rem;
-        text-align: center;
-        border-bottom: 1px solid var(--border);
-    }
+.current-time {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
+    padding: 1.5rem 2rem;
+    border-radius: 20px;
+    text-align: center;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    margin-top: 2rem;
+}
 
-    .logo h1 {
-        font-size: 1.8rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
+.time-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    font-family: 'Poppins', sans-serif;
+}
 
-    .nav-menu {
-        padding: 1.5rem 0;
-    }
+.date-display {
+    color: #64748b;
+    font-weight: 500;
+}
 
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 0.875rem 2rem;
-        color: var(--text);
-        text-decoration: none;
-        transition: all 0.3s ease;
-        border-left: 3px solid transparent;
-    }
+/* Shifts Grid */
+.shifts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
 
-    .nav-item:hover {
-        background: var(--primary-light);
-        color: var(--primary);
-        border-left-color: var(--primary);
-    }
-
-    .nav-item.active {
-        background: var(--primary-light);
-        color: var(--primary);
-        border-left-color: var(--primary);
-        font-weight: 600;
-    }
-
-    .nav-item i {
-        width: 20px;
-        text-align: center;
-    }
-
-    .user-profile {
-        padding: 1.5rem 2rem;
-        border-top: 1px solid var(--border);
-        margin-top: auto;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-    }
-
-    .user-details h4 {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: var(--text);
-    }
-
-    .user-details span {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-    }
-
-    /* Main Content */
-    .main-content {
-        flex: 1;
-        padding: 2rem;
-        overflow-y: auto;
-    }
-
-    /* My Shifts Dashboard */
-    .my-shifts-dashboard {
-        max-width: 1400px;
-        margin: 0 auto;
-        animation: fadeIn 0.6s ease-out;
-    }
-
-    .dashboard-header {
-        margin-bottom: 3rem;
-        animation: fadeInDown 0.6s ease-out;
-    }
-
-    .welcome-section {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .welcome-text h1 {
-        font-family: 'Poppins', sans-serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
-    }
-
-    .welcome-text p {
-        color: #64748b;
-        font-size: 1.1rem;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    .current-time {
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
-        padding: 1.5rem 2rem;
-        border-radius: 20px;
-        text-align: center;
-        border: 1px solid rgba(124, 58, 237, 0.2);
-        margin-top: 2rem;
-        display: inline-block;
-        min-width: 300px;
-    }
-
-    .time-display {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--primary);
-        margin-bottom: 0.5rem;
-        font-family: 'Poppins', sans-serif;
-    }
-
-    .date-display {
-        color: #64748b;
-        font-weight: 500;
-    }
-
-    /* Shifts Grid */
+@media (max-width: 1024px) {
     .shifts-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 2rem;
-        margin-bottom: 3rem;
+        grid-template-columns: 1fr;
     }
+}
 
-    @media (max-width: 1024px) {
-        .shifts-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+/* Shift Cards */
+.shift-card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
 
-    /* Shift Cards */
-    .shift-card {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.05);
-        border: 1px solid var(--border);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
+.shift-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+}
 
-    .shift-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
-    }
+.shift-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
 
-    .shift-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 5px;
-        height: 100%;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-    }
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
+.card-header h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
 
-    .card-header h2 {
-        font-family: 'Poppins', sans-serif;
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
+.card-header i {
+    color: var(--primary);
+}
 
-    .card-header i {
-        color: var(--primary);
-    }
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border: none;
-        padding: 0.875rem 1.5rem;
-        border-radius: 12px;
-        font-family: 'Poppins', sans-serif;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-decoration: none;
-    }
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
+}
 
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
-    }
+/* Shifts List */
+.shifts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
 
-    /* Shifts List */
-    .shifts-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
+.shift-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
 
-    .shift-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.25rem;
-        border-bottom: 1px solid var(--border);
-        transition: all 0.3s ease;
-    }
+.shift-item:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
+    transform: translateX(5px);
+    border-radius: 10px;
+}
 
-    .shift-item:hover {
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(236, 72, 153, 0.02));
-        transform: translateX(5px);
-        border-radius: 10px;
-    }
+.shift-item:last-child {
+    border-bottom: none;
+}
 
-    .shift-item:last-child {
-        border-bottom: none;
-    }
+.shift-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
-    .shift-info {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
+.shift-color {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
 
-    .shift-color {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        color: white;
-    }
+.shift-details h4 {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+}
 
-    .shift-details h4 {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: var(--text);
-    }
+.shift-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #64748b;
+}
 
-    .shift-meta {
-        display: flex;
-        gap: 1rem;
-        font-size: 0.9rem;
-        color: #64748b;
-    }
+.shift-time {
+    font-weight: 600;
+    color: var(--primary);
+}
 
-    .shift-time {
-        font-weight: 600;
-        color: var(--primary);
-    }
+.shift-status {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
 
-    .shift-status {
-        display: inline-block;
-        padding: 0.35rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
+.status-scheduled {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+    color: #3B82F6;
+}
 
-    .status-scheduled {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
-        color: #3B82F6;
-    }
+.status-completed {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    color: #10B981;
+}
 
-    .status-completed {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-        color: #10B981;
-    }
+.status-absent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+    color: #F59E0B;
+}
 
-    .status-absent {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
-        color: #F59E0B;
-    }
+.status-cancelled {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+    color: #EF4444;
+}
 
-    .status-cancelled {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
-        color: #EF4444;
-    }
+.shift-actions {
+    display: flex;
+    gap: 0.5rem;
+}
 
-    .shift-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
+.btn-action {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
 
-    .btn-action {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 1rem;
-    }
+.btn-swap {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05));
+    color: #8B5CF6;
+}
 
-    .btn-swap {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.05));
-        color: #8B5CF6;
-    }
+.btn-swap:hover {
+    background: #8B5CF6;
+    color: white;
+    transform: scale(1.05);
+}
 
-    .btn-swap:hover {
-        background: #8B5CF6;
-        color: white;
-        transform: scale(1.05);
-    }
+/* Calendar View */
+.calendar-container {
+    margin-top: 2rem;
+}
 
-    /* Calendar View */
-    .calendar-container {
-        margin-top: 2rem;
-    }
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
 
-    .calendar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
-    .calendar-nav {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-    .btn-outline {
-        background: transparent;
-        border: 2px solid var(--border);
-        color: var(--text);
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        font-family: 'Poppins', sans-serif;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
+.btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+}
 
-    .btn-outline:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        transform: translateY(-2px);
-    }
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
 
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.5rem;
-    }
+.calendar-day-header {
+    text-align: center;
+    padding: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
+    border-radius: 10px;
+}
 
-    .calendar-day-header {
-        text-align: center;
-        padding: 1rem;
-        font-weight: 600;
-        color: var(--text);
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
-        border-radius: 10px;
-    }
+.calendar-day {
+    min-height: 120px;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    transition: all 0.3s ease;
+}
 
-    .calendar-day {
-        min-height: 120px;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--bg);
-        transition: all 0.3s ease;
-    }
+.calendar-day:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
 
-    .calendar-day:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
+.calendar-day.today {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
+    border-color: var(--primary);
+}
 
-    .calendar-day.today {
-        background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.05));
-        border-color: var(--primary);
-    }
+.day-number {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: right;
+    color: var(--text);
+}
 
-    .day-number {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        text-align: right;
-        color: var(--text);
-    }
+.calendar-shift {
+    background: var(--card-bg);
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    border-left: 3px solid;
+    transition: all 0.3s ease;
+}
 
-    .calendar-shift {
-        background: var(--card-bg);
-        padding: 0.5rem;
-        border-radius: 6px;
-        margin-bottom: 0.5rem;
-        font-size: 0.8rem;
-        border-left: 3px solid;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
+.calendar-shift:hover {
+    transform: translateX(3px);
+}
 
-    .calendar-shift:hover {
-        transform: translateX(3px);
-    }
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
 
-    /* Stats Cards */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-top: 1rem;
-    }
+.stat-card {
+    background: var(--bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
 
-    .stat-card {
-        background: var(--bg);
-        border-radius: 15px;
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.stat-total { color: var(--primary); }
+.stat-completed { color: #10B981; }
+.stat-absent { color: #F59E0B; }
+.stat-attendance { color: #3B82F6; }
+
+/* Requests List */
+.requests-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.request-item:hover {
+    background: rgba(124, 58, 237, 0.05);
+    border-radius: 10px;
+}
+
+.request-item:last-child {
+    border-bottom: none;
+}
+
+.request-info h4 {
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--text);
+}
+
+.request-info p {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+}
+
+.request-status {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+    color: #F59E0B;
+}
+
+.status-approved {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    color: #10B981;
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+    color: #EF4444;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--border);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+
+/* Alert Messages */
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideDown 0.3s ease;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    border-left: 4px solid #10B981;
+    color: #065F46;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    margin: 2rem auto;
+    position: relative;
+    animation: slideDown 0.4s ease;
+    border: 1px solid var(--border);
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h4 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+    color: var(--text);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'Poppins', sans-serif;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .my-shifts-dashboard {
         padding: 1.5rem;
-        text-align: center;
-        border: 1px solid var(--border);
-        transition: all 0.3s ease;
     }
-
-    .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-value {
-        font-family: 'Poppins', sans-serif;
+    
+    .dashboard-header h1 {
         font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
     }
-
-    .stat-label {
+    
+    .shifts-grid {
+        gap: 1.5rem;
+    }
+    
+    .shift-card {
+        padding: 1.5rem;
+    }
+    
+    .calendar-grid {
+        grid-template-columns: repeat(7, 1fr);
         font-size: 0.9rem;
-        color: #64748b;
-        font-weight: 500;
     }
-
-    .stat-total { color: var(--primary); }
-    .stat-completed { color: #10B981; }
-    .stat-absent { color: #F59E0B; }
-    .stat-attendance { color: #3B82F6; }
-
-    /* Requests List */
-    .requests-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
+    
+    .calendar-day {
+        min-height: 100px;
+        padding: 0.5rem;
     }
-
-    .request-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        transition: all 0.3s ease;
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
-
-    .request-item:hover {
-        background: rgba(124, 58, 237, 0.05);
-        border-radius: 10px;
-    }
-
-    .request-item:last-child {
-        border-bottom: none;
-    }
-
-    .request-info h4 {
-        font-weight: 600;
-        margin: 0 0 0.25rem 0;
-        color: var(--text);
-    }
-
-    .request-info p {
-        font-size: 0.85rem;
-        color: #64748b;
-        margin: 0;
-    }
-
-    .request-status {
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .status-pending {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
-        color: #F59E0B;
-    }
-
-    .status-approved {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-        color: #10B981;
-    }
-
-    .status-rejected {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
-        color: #EF4444;
-    }
-
-    /* Empty States */
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #64748b;
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        color: var(--border);
-        margin-bottom: 1rem;
-    }
-
-    .empty-state h3 {
-        font-family: 'Poppins', sans-serif;
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-        color: var(--text);
-    }
-
-    /* Alert Messages */
-    .alert {
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
+    
+    .shift-item {
+        flex-direction: column;
+        align-items: flex-start;
         gap: 1rem;
-        animation: slideDown 0.3s ease;
     }
-
-    .alert-success {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-        border-left: 4px solid #10B981;
-        color: #065F46;
-    }
-
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
+    
+    .shift-actions {
         width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(5px);
-        z-index: 1000;
-        animation: fadeIn 0.3s ease;
-    }
-
-    .modal-content {
-        background: var(--card-bg);
-        border-radius: 20px;
-        width: 90%;
-        max-width: 600px;
-        margin: 2rem auto;
-        position: relative;
-        animation: slideDown 0.4s ease;
-        border: 1px solid var(--border);
-    }
-
-    .modal-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-header h4 {
-        font-family: 'Poppins', sans-serif;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0;
-        color: var(--text);
-    }
-
-    .close-modal {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        color: #64748b;
-        cursor: pointer;
-        transition: color 0.3s ease;
-    }
-
-    .close-modal:hover {
-        color: var(--text);
-    }
-
-    .modal-body {
-        padding: 2rem;
-    }
-
-    .modal-footer {
-        padding: 1.5rem 2rem;
-        border-top: 1px solid var(--border);
-        display: flex;
         justify-content: flex-end;
-        gap: 1rem;
     }
+}
 
-    /* Form Elements */
-    .form-group {
-        margin-bottom: 1.5rem;
+@media (max-width: 480px) {
+    .my-shifts-dashboard {
+        padding: 1rem;
     }
+    
+    .calendar-grid {
+        grid-template-columns: repeat(7, 1fr);
+        font-size: 0.8rem;
+    }
+    
+    .calendar-day {
+        min-height: 80px;
+    }
+}
 
-    .form-group label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-        color: var(--text);
-        font-family: 'Poppins', sans-serif;
-    }
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
-    .form-control {
-        width: 100%;
-        padding: 0.875rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: var(--bg);
-        color: var(--text);
-        font-size: 1rem;
-        transition: all 0.3s ease;
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .main-container {
-            flex-direction: column;
-        }
-        
-        .sidebar {
-            width: 100%;
-            padding: 1rem 0;
-        }
-        
-        .logo {
-            padding: 0 1rem 1rem;
-        }
-        
-        .nav-menu {
-            padding: 1rem 0;
-        }
-        
-        .nav-item {
-            padding: 0.75rem 1rem;
-        }
-        
-        .user-profile {
-            padding: 1rem;
-        }
-        
-        .main-content {
-            padding: 1.5rem;
-        }
-        
-        .my-shifts-dashboard {
-            padding: 0;
-        }
-        
-        .dashboard-header h1 {
-            font-size: 2rem;
-        }
-        
-        .shifts-grid {
-            gap: 1.5rem;
-        }
-        
-        .shift-card {
-            padding: 1.5rem;
-        }
-        
-        .calendar-grid {
-            grid-template-columns: repeat(7, 1fr);
-            font-size: 0.9rem;
-        }
-        
-        .calendar-day {
-            min-height: 100px;
-            padding: 0.5rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .shift-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        
-        .shift-actions {
-            width: 100%;
-            justify-content: flex-end;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .main-content {
-            padding: 1rem;
-        }
-        
-        .calendar-grid {
-            grid-template-columns: repeat(7, 1fr);
-            font-size: 0.8rem;
-        }
-        
-        .calendar-day {
-            min-height: 80px;
-        }
-        
-        .current-time {
-            min-width: auto;
-            width: 100%;
-        }
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    </style>
-</head>
-<body>
-    <div class="main-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <h1>EasySalles</h1>
+<div class="my-shifts-dashboard">
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <div class="welcome-text">
+                <h1>My Shifts</h1>
+                <p>View and manage your work schedule</p>
             </div>
-            
-            <nav class="nav-menu">
-                <a href="dashboard.php" class="nav-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="my-shifts.php" class="nav-item active">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>My Shifts</span>
-                </a>
-                <a href="request-shift.php" class="nav-item">
-                    <i class="fas fa-exchange-alt"></i>
-                    <span>Request Change</span>
-                </a>
-                <a href="attendance.php" class="nav-item">
-                    <i class="fas fa-clipboard-check"></i>
-                    <span>Attendance</span>
-                </a>
-                <a href="profile.php" class="nav-item">
-                    <i class="fas fa-user"></i>
-                    <span>My Profile</span>
-                </a>
-                <a href="logout.php" class="nav-item">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
-            
-            <div class="user-profile">
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <?php 
-                        $initials = '';
-                        if (isset($_SESSION['full_name']) && !empty($_SESSION['full_name'])) {
-                            $name_parts = explode(' ', $_SESSION['full_name']);
-                            foreach ($name_parts as $part) {
-                                $initials .= strtoupper(substr($part, 0, 1));
-                                if (strlen($initials) >= 2) break;
-                            }
-                        } else {
-                            $initials = strtoupper(substr($_SESSION['username'], 0, 2));
-                        }
-                        echo $initials;
-                        ?>
-                    </div>
-                    <div class="user-details">
-                        <h4><?php echo htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username']); ?></h4>
-                        <span>Staff Member</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="my-shifts-dashboard">
-                <div class="dashboard-header">
-                    <div class="welcome-section">
-                        <div class="welcome-text">
-                            <h1>My Shifts</h1>
-                            <p>View and manage your work schedule</p>
-                        </div>
-                        <div class="current-time">
-                            <div class="time-display" id="currentTime"></div>
-                            <div class="date-display" id="currentDate"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <?php if (isset($_SESSION['success'])): ?>
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i>
-                        <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-                    </div>
-                <?php endif; ?>
-
-                <div class="shifts-grid">
-                    <!-- Main Content -->
-                    <div>
-                        <!-- Upcoming Shifts -->
-                        <div class="shift-card">
-                            <div class="card-header">
-                                <h2><i class="fas fa-calendar-alt"></i> Upcoming Shifts</h2>
-                                <button class="btn-primary" onclick="openRequestModal('swap')">
-                                    <i class="fas fa-exchange-alt"></i> Request Change
-                                </button>
-                            </div>
-                            
-                            <?php if (empty($upcoming_shifts)): ?>
-                                <div class="empty-state">
-                                    <i class="fas fa-calendar-times"></i>
-                                    <h3>No Upcoming Shifts</h3>
-                                    <p>You have no shifts scheduled for the future</p>
-                                </div>
-                            <?php else: ?>
-                                <div class="shifts-list">
-                                    <?php foreach ($upcoming_shifts as $shift): 
-                                        $start = new DateTime($shift['start_time']);
-                                        $end = new DateTime($shift['end_time']);
-                                        $diff = $start->diff($end);
-                                        $duration = $diff->h . 'h';
-                                        if ($diff->i > 0) $duration .= ' ' . $diff->i . 'm';
-                                    ?>
-                                    <div class="shift-item">
-                                        <div class="shift-info">
-                                            <div class="shift-color" style="background: <?php echo $shift['color']; ?>;">
-                                                <i class="fas fa-clock"></i>
-                                            </div>
-                                            <div class="shift-details">
-                                                <h4><?php echo htmlspecialchars($shift['shift_name']); ?></h4>
-                                                <div class="shift-meta">
-                                                    <span><?php echo date('D, M j', strtotime($shift['assigned_date'])); ?></span>
-                                                    <span class="shift-time">
-                                                        <?php echo date('h:i A', strtotime($shift['start_time'])); ?> - 
-                                                        <?php echo date('h:i A', strtotime($shift['end_time'])); ?>
-                                                    </span>
-                                                    <span>• <?php echo $duration; ?></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span class="shift-status status-<?php echo $shift['status']; ?>">
-                                            <?php echo ucfirst($shift['status']); ?>
-                                        </span>
-                                        <?php if ($shift['status'] == 'scheduled' && strtotime($shift['assigned_date']) > strtotime('+1 day')): ?>
-                                        <div class="shift-actions">
-                                            <button class="btn-action btn-swap" 
-                                                    onclick="requestForShift(<?php echo $shift['user_shift_id']; ?>, '<?php echo $shift['assigned_date']; ?>', <?php echo $shift['shift_id']; ?>)">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </button>
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- Calendar View -->
-                        <div class="shift-card calendar-container">
-                            <div class="card-header">
-                                <h2><i class="fas fa-calendar"></i> Shift Calendar</h2>
-                                <div class="calendar-nav">
-                                    <button class="btn-outline" onclick="changeMonth(-1)">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </button>
-                                    <span id="currentMonth" style="font-weight: 600; min-width: 150px; text-align: center;"></span>
-                                    <button class="btn-outline" onclick="changeMonth(1)">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="calendar-grid" id="calendarContainer">
-                                <!-- Calendar will be generated by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sidebar -->
-                    <div>
-                        <!-- My Requests -->
-                        <div class="shift-card">
-                            <div class="card-header">
-                                <h2><i class="fas fa-paper-plane"></i> My Requests</h2>
-                            </div>
-                            
-                            <?php if (empty($my_requests)): ?>
-                                <div style="text-align: center; padding: 2rem; color: #64748b;">
-                                    <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
-                                    <p style="margin-top: 1rem;">No shift requests</p>
-                                </div>
-                            <?php else: ?>
-                                <div class="requests-list">
-                                    <?php foreach ($my_requests as $request): 
-                                        $type_labels = [
-                                            'swap' => 'Swap',
-                                            'timeoff' => 'Time Off',
-                                            'cover' => 'Cover',
-                                            'change' => 'Change'
-                                        ];
-                                    ?>
-                                    <div class="request-item">
-                                        <div class="request-info">
-                                            <h4><?php echo $type_labels[$request['request_type']] ?? $request['request_type']; ?></h4>
-                                            <p>
-                                                <?php if ($request['start_date']): ?>
-                                                    <?php echo date('M j', strtotime($request['start_date'])); ?>
-                                                    <?php if ($request['end_date'] && $request['end_date'] != $request['start_date']): ?>
-                                                        - <?php echo date('j', strtotime($request['end_date'])); ?>
-                                                    <?php endif; ?>
-                                                <?php endif; ?>
-                                            </p>
-                                        </div>
-                                        <span class="request-status status-<?php echo $request['status']; ?>">
-                                            <?php echo ucfirst($request['status']); ?>
-                                        </span>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- Quick Stats -->
-                        <div class="shift-card" style="margin-top: 1.5rem;">
-                            <div class="card-header">
-                                <h2><i class="fas fa-chart-line"></i> Quick Stats</h2>
-                            </div>
-                            <div class="stats-grid">
-                                <?php
-                                $this_month = date('Y-m');
-                                $stmt = $pdo->prepare("SELECT 
-                                    COUNT(*) as total_shifts,
-                                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_shifts,
-                                    SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_shifts
-                                    FROM EASYSALLES_USER_SHIFTS 
-                                    WHERE user_id = ? AND DATE_FORMAT(assigned_date, '%Y-%m') = ?");
-                                $stmt->execute([$user_id, $this_month]);
-                                $stats = $stmt->fetch();
-                                
-                                $attendance_rate = $stats['total_shifts'] > 0 
-                                    ? round(($stats['completed_shifts'] / $stats['total_shifts']) * 100, 1) 
-                                    : 0;
-                                ?>
-                                <div class="stat-card">
-                                    <div class="stat-value stat-total"><?php echo $stats['total_shifts'] ?? 0; ?></div>
-                                    <div class="stat-label">Total Shifts</div>
-                                </div>
-                                
-                                <div class="stat-card">
-                                    <div class="stat-value stat-completed"><?php echo $stats['completed_shifts'] ?? 0; ?></div>
-                                    <div class="stat-label">Completed</div>
-                                </div>
-                                
-                                <div class="stat-card">
-                                    <div class="stat-value stat-absent"><?php echo $stats['absent_shifts'] ?? 0; ?></div>
-                                    <div class="stat-label">Absences</div>
-                                </div>
-                                
-                                <div class="stat-card">
-                                    <div class="stat-value stat-attendance"><?php echo $attendance_rate; ?>%</div>
-                                    <div class="stat-label">Attendance</div>
-                                </div>
-                            </div>
-                            <div style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: #64748b;">
-                                This month
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="current-time">
+                <div class="time-display" id="currentTime"></div>
+                <div class="date-display" id="currentDate"></div>
             </div>
         </div>
     </div>
 
-    <!-- Request Modal -->
-    <div class="modal" id="requestModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 id="modalTitle">Request Shift Change</h4>
-                <button type="button" class="close-modal">&times;</button>
-            </div>
-            <form method="POST" id="requestForm">
-                <div class="modal-body">
-                    <input type="hidden" name="request_shift_change" value="1">
-                    <input type="hidden" name="user_shift_id" id="request_user_shift_id">
-                    <input type="hidden" name="shift_date" id="request_shift_date">
-                    
-                    <div class="form-group">
-                        <label for="request_type">
-                            <i class="fas fa-exchange-alt"></i> Request Type
-                        </label>
-                        <select class="form-control" id="request_type" name="request_type" required onchange="updateRequestForm()">
-                            <option value="swap">Swap Shift</option>
-                            <option value="timeoff">Time Off</option>
-                            <option value="cover">Cover Request</option>
-                            <option value="change">Shift Change</option>
-                        </select>
-                    </div>
-                    
-                    <div id="shiftInfo" class="alert alert-success" style="display: none; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
-                        <i class="fas fa-info-circle"></i>
-                        Selected Shift: <strong id="selectedShiftInfo"></strong>
-                    </div>
-                    
-                    <div class="form-group" id="dateRangeGroup">
-                        <label>
-                            <i class="fas fa-calendar"></i> Date Range
-                        </label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                            <div>
-                                <input type="date" class="form-control" id="start_date" name="start_date" required>
-                            </div>
-                            <div>
-                                <input type="date" class="form-control" id="end_date" name="end_date">
-                                <small style="display: block; margin-top: 0.5rem; color: #64748b;">Leave empty for single day</small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" id="shiftSelectionGroup" style="display: none;">
-                        <label for="shift_id">
-                            <i class="fas fa-clock"></i> Current Shift
-                        </label>
-                        <select class="form-control" id="shift_id" name="shift_id">
-                            <option value="">Select shift...</option>
-                            <?php foreach ($all_shifts as $shift): ?>
-                            <option value="<?php echo $shift['shift_id']; ?>">
-                                <?php echo htmlspecialchars($shift['shift_name']); ?> 
-                                (<?php echo date('h:i A', strtotime($shift['start_time'])); ?> - 
-                                <?php echo date('h:i A', strtotime($shift['end_time'])); ?>)
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="newShiftGroup" style="display: none;">
-                        <label for="requested_shift_id">
-                            <i class="fas fa-clock"></i> New Shift (Optional)
-                        </label>
-                        <select class="form-control" id="requested_shift_id" name="requested_shift_id">
-                            <option value="">Select new shift...</option>
-                            <?php foreach ($all_shifts as $shift): ?>
-                            <option value="<?php echo $shift['shift_id']; ?>">
-                                <?php echo htmlspecialchars($shift['shift_name']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="staffGroup" style="display: none;">
-                        <label for="requested_user_id">
-                            <i class="fas fa-user-friends"></i> Request Cover From
-                        </label>
-                        <select class="form-control" id="requested_user_id" name="requested_user_id">
-                            <option value="">Select staff member...</option>
-                            <?php foreach ($other_staff as $staff): ?>
-                            <option value="<?php echo $staff['user_id']; ?>">
-                                <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="reason">
-                            <i class="fas fa-comment"></i> Reason
-                        </label>
-                        <textarea class="form-control" id="reason" name="reason" rows="3" required 
-                                  placeholder="Please provide a reason for your request..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="priority">
-                            <i class="fas fa-exclamation-circle"></i> Priority
-                        </label>
-                        <select class="form-control" id="priority" name="priority">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-outline close-modal">Cancel</button>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-paper-plane"></i> Submit Request
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="shifts-grid">
+        <!-- Main Content -->
+        <div>
+            <!-- Upcoming Shifts -->
+            <div class="shift-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Upcoming Shifts</h2>
+                    <button class="btn-primary" onclick="openRequestModal('swap')">
+                        <i class="fas fa-exchange-alt"></i> Request Change
                     </button>
                 </div>
-            </form>
+                
+                <?php if (empty($upcoming_shifts)): ?>
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <h3>No Upcoming Shifts</h3>
+                        <p>You have no shifts scheduled for the future</p>
+                    </div>
+                <?php else: ?>
+                    <div class="shifts-list">
+                        <?php foreach ($upcoming_shifts as $shift): 
+                            $start = new DateTime($shift['start_time']);
+                            $end = new DateTime($shift['end_time']);
+                            $diff = $start->diff($end);
+                            $duration = $diff->h . 'h';
+                            if ($diff->i > 0) $duration .= ' ' . $diff->i . 'm';
+                        ?>
+                        <div class="shift-item">
+                            <div class="shift-info">
+                                <div class="shift-color" style="background: <?php echo $shift['color']; ?>;">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="shift-details">
+                                    <h4><?php echo htmlspecialchars($shift['shift_name']); ?></h4>
+                                    <div class="shift-meta">
+                                        <span><?php echo date('D, M j', strtotime($shift['assigned_date'])); ?></span>
+                                        <span class="shift-time">
+                                            <?php echo date('h:i A', strtotime($shift['start_time'])); ?> - 
+                                            <?php echo date('h:i A', strtotime($shift['end_time'])); ?>
+                                        </span>
+                                        <span>• <?php echo $duration; ?></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="shift-status status-<?php echo $shift['status']; ?>">
+                                <?php echo ucfirst($shift['status']); ?>
+                            </div>
+                            <?php if ($shift['status'] == 'scheduled' && strtotime($shift['assigned_date']) > strtotime('+1 day')): ?>
+                            <div class="shift-actions">
+                                <button class="btn-action btn-swap" 
+                                        onclick="requestForShift(<?php echo $shift['user_shift_id']; ?>, '<?php echo $shift['assigned_date']; ?>', <?php echo $shift['shift_id']; ?>)">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Calendar View -->
+            <div class="shift-card calendar-container">
+                <div class="card-header">
+                    <h2><i class="fas fa-calendar"></i> Shift Calendar</h2>
+                    <div class="calendar-nav">
+                        <button class="btn-outline" onclick="changeMonth(-1)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="currentMonth" style="font-weight: 600; min-width: 150px; text-align: center;"></span>
+                        <button class="btn-outline" onclick="changeMonth(1)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendarContainer">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+            <!-- My Requests -->
+            <div class="shift-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-paper-plane"></i> My Requests</h2>
+                </div>
+                
+                <?php if (empty($my_requests)): ?>
+                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                        <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p style="margin-top: 1rem;">No shift requests</p>
+                    </div>
+                <?php else: ?>
+                    <div class="requests-list">
+                        <?php foreach ($my_requests as $request): 
+                            $type_labels = [
+                                'swap' => 'Swap',
+                                'timeoff' => 'Time Off',
+                                'cover' => 'Cover',
+                                'change' => 'Change'
+                            ];
+                        ?>
+                        <div class="request-item">
+                            <div class="request-info">
+                                <h4><?php echo $type_labels[$request['request_type']] ?? $request['request_type']; ?></h4>
+                                <p>
+                                    <?php if ($request['start_date']): ?>
+                                        <?php echo date('M j', strtotime($request['start_date'])); ?>
+                                        <?php if ($request['end_date'] && $request['end_date'] != $request['start_date']): ?>
+                                            - <?php echo date('j', strtotime($request['end_date'])); ?>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <span class="request-status status-<?php echo $request['status']; ?>">
+                                <?php echo ucfirst($request['status']); ?>
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="shift-card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-line"></i> Quick Stats</h2>
+                </div>
+                <div class="stats-grid">
+                    <?php
+                    $this_month = date('Y-m');
+                    $stmt = $pdo->prepare("SELECT 
+                        COUNT(*) as total_shifts,
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_shifts,
+                        SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_shifts
+                        FROM EASYSALLES_USER_SHIFTS 
+                        WHERE user_id = ? AND DATE_FORMAT(assigned_date, '%Y-%m') = ?");
+                    $stmt->execute([$user_id, $this_month]);
+                    $stats = $stmt->fetch();
+                    
+                    $attendance_rate = $stats['total_shifts'] > 0 
+                        ? round(($stats['completed_shifts'] / $stats['total_shifts']) * 100, 1) 
+                        : 0;
+                    ?>
+                    <div class="stat-card">
+                        <div class="stat-value stat-total"><?php echo $stats['total_shifts'] ?? 0; ?></div>
+                        <div class="stat-label">Total Shifts</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value stat-completed"><?php echo $stats['completed_shifts'] ?? 0; ?></div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value stat-absent"><?php echo $stats['absent_shifts'] ?? 0; ?></div>
+                        <div class="stat-label">Absences</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value stat-attendance"><?php echo $attendance_rate; ?>%</div>
+                        <div class="stat-label">Attendance</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: #64748b;">
+                    This month
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-    // Initialize calendar
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
+<!-- Request Modal -->
+<div class="modal" id="requestModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 id="modalTitle">Request Shift Change</h4>
+            <button type="button" class="close-modal">&times;</button>
+        </div>
+        <form method="POST" id="requestForm">
+            <div class="modal-body">
+                <input type="hidden" name="request_shift_change" value="1">
+                <input type="hidden" name="user_shift_id" id="request_user_shift_id">
+                <input type="hidden" name="shift_date" id="request_shift_date">
+                
+                <div class="form-group">
+                    <label for="request_type">
+                        <i class="fas fa-exchange-alt"></i> Request Type
+                    </label>
+                    <select class="form-control" id="request_type" name="request_type" required onchange="updateRequestForm()">
+                        <option value="swap">Swap Shift</option>
+                        <option value="timeoff">Time Off</option>
+                        <option value="cover">Cover Request</option>
+                        <option value="change">Shift Change</option>
+                    </select>
+                </div>
+                
+                <div id="shiftInfo" class="alert alert-success" style="display: none; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Selected Shift: <strong id="selectedShiftInfo"></strong>
+                </div>
+                
+                <div class="form-group" id="dateRangeGroup">
+                    <label>
+                        <i class="fas fa-calendar"></i> Date Range
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                            <small style="display: block; margin-top: 0.5rem; color: #64748b;">Leave empty for single day</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="shiftSelectionGroup" style="display: none;">
+                    <label for="shift_id">
+                        <i class="fas fa-clock"></i> Current Shift
+                    </label>
+                    <select class="form-control" id="shift_id" name="shift_id">
+                        <option value="">Select shift...</option>
+                        <?php foreach ($all_shifts as $shift): ?>
+                        <option value="<?php echo $shift['shift_id']; ?>">
+                            <?php echo htmlspecialchars($shift['shift_name']); ?> 
+                            (<?php echo date('h:i A', strtotime($shift['start_time'])); ?> - 
+                            <?php echo date('h:i A', strtotime($shift['end_time'])); ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="newShiftGroup" style="display: none;">
+                    <label for="requested_shift_id">
+                        <i class="fas fa-clock"></i> New Shift (Optional)
+                    </label>
+                    <select class="form-control" id="requested_shift_id" name="requested_shift_id">
+                        <option value="">Select new shift...</option>
+                        <?php foreach ($all_shifts as $shift): ?>
+                        <option value="<?php echo $shift['shift_id']; ?>">
+                            <?php echo htmlspecialchars($shift['shift_name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="staffGroup" style="display: none;">
+                    <label for="requested_user_id">
+                        <i class="fas fa-user-friends"></i> Request Cover From
+                    </label>
+                    <select class="form-control" id="requested_user_id" name="requested_user_id">
+                        <option value="">Select staff member...</option>
+                        <?php foreach ($other_staff as $staff): ?>
+                        <option value="<?php echo $staff['user_id']; ?>">
+                            <?php echo htmlspecialchars($staff['full_name'] ?: $staff['username']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reason">
+                        <i class="fas fa-comment"></i> Reason
+                    </label>
+                    <textarea class="form-control" id="reason" name="reason" rows="3" required 
+                              placeholder="Please provide a reason for your request..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priority">
+                        <i class="fas fa-exclamation-circle"></i> Priority
+                    </label>
+                    <select class="form-control" id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline close-modal">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    // Update current time
-    function updateCurrentTime() {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        
-        document.getElementById('currentTime').textContent = timeStr;
-        document.getElementById('currentDate').textContent = dateStr;
+<script>
+// Initialize calendar
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+
+// Update current time
+function updateCurrentTime() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    document.getElementById('currentTime').textContent = timeStr;
+    document.getElementById('currentDate').textContent = dateStr;
+}
+
+// Generate calendar
+function generateCalendar(month, year) {
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    
+    document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+    
+    const container = document.getElementById('calendarContainer');
+    container.innerHTML = '';
+    
+    // Add day headers
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    days.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        container.appendChild(dayHeader);
+    });
+    
+    // Get first day of month
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Add empty days
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day';
+        container.appendChild(emptyDay);
     }
-
-    // Generate calendar
-    function generateCalendar(month, year) {
-        const monthNames = ["January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"];
+    
+    // Add days
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+    const shifts = <?php echo json_encode($upcoming_shifts); ?>;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
         
-        document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+        if (isCurrentMonth && day === today.getDate()) {
+            dayDiv.classList.add('today');
+        }
         
-        const container = document.getElementById('calendarContainer');
-        container.innerHTML = '';
+        // Day number
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = day;
+        dayDiv.appendChild(dayNumber);
         
-        // Add day headers
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        days.forEach(day => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'calendar-day-header';
-            dayHeader.textContent = day;
-            container.appendChild(dayHeader);
+        // Add shift events for this day
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        shifts.forEach(shift => {
+            if (shift.assigned_date === dateStr) {
+                const shiftDiv = document.createElement('div');
+                shiftDiv.className = 'calendar-shift';
+                shiftDiv.style.borderLeftColor = shift.color;
+                shiftDiv.style.background = shift.color + '20';
+                shiftDiv.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 2px;">${shift.shift_name}</div>
+                    <div style="font-size: 0.75rem;">${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}</div>
+                `;
+                shiftDiv.addEventListener('click', () => {
+                    requestForShift(shift.user_shift_id, shift.assigned_date, shift.shift_id);
+                });
+                dayDiv.appendChild(shiftDiv);
+            }
         });
         
-        // Get first day of month
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
-        // Add empty days
-        for (let i = 0; i < firstDay; i++) {
-            const emptyDay = document.createElement('div');
-            emptyDay.className = 'calendar-day';
-            container.appendChild(emptyDay);
-        }
-        
-        // Add days
-        const today = new Date();
-        const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-        const shifts = <?php echo json_encode($upcoming_shifts); ?>;
-        
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'calendar-day';
-            
-            if (isCurrentMonth && day === today.getDate()) {
-                dayDiv.classList.add('today');
-            }
-            
-            // Day number
-            const dayNumber = document.createElement('div');
-            dayNumber.className = 'day-number';
-            dayNumber.textContent = day;
-            dayDiv.appendChild(dayNumber);
-            
-            // Add shift events for this day
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            
-            shifts.forEach(shift => {
-                if (shift.assigned_date === dateStr) {
-                    const shiftDiv = document.createElement('div');
-                    shiftDiv.className = 'calendar-shift';
-                    shiftDiv.style.borderLeftColor = shift.color;
-                    shiftDiv.style.background = shift.color + '20';
-                    shiftDiv.innerHTML = `
-                        <div style="font-weight: 600; margin-bottom: 2px;">${shift.shift_name}</div>
-                        <div style="font-size: 0.75rem;">${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}</div>
-                    `;
-                    shiftDiv.addEventListener('click', () => {
-                        requestForShift(shift.user_shift_id, shift.assigned_date, shift.shift_id);
-                    });
-                    dayDiv.appendChild(shiftDiv);
-                }
-            });
-            
-            container.appendChild(dayDiv);
-        }
+        container.appendChild(dayDiv);
     }
+}
 
-    function formatTime(timeStr) {
-        const [hours, minutes] = timeStr.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        return `${displayHour}:${minutes} ${ampm}`;
+function formatTime(timeStr) {
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+}
+
+function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
     }
+    generateCalendar(currentMonth, currentYear);
+}
 
-    function changeMonth(delta) {
-        currentMonth += delta;
-        if (currentMonth < 0) {
-            currentMonth = 11;
-            currentYear--;
-        } else if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear++;
-        }
-        generateCalendar(currentMonth, currentYear);
+function openRequestModal(type) {
+    document.getElementById('requestModal').style.display = 'block';
+    if (type) {
+        document.getElementById('request_type').value = type;
+        updateRequestForm();
     }
+}
 
-    function openRequestModal(type) {
-        document.getElementById('requestModal').style.display = 'block';
-        if (type) {
-            document.getElementById('request_type').value = type;
-            updateRequestForm();
-        }
+function requestForShift(userShiftId, shiftDate, shiftId) {
+    openRequestModal('swap');
+    document.getElementById('request_user_shift_id').value = userShiftId;
+    document.getElementById('request_shift_date').value = shiftDate;
+    
+    // Find shift info
+    const shifts = <?php echo json_encode($upcoming_shifts); ?>;
+    const shift = shifts.find(s => s.user_shift_id == userShiftId);
+    if (shift) {
+        document.getElementById('shiftInfo').style.display = 'flex';
+        document.getElementById('selectedShiftInfo').textContent = 
+            `${shift.shift_name} on ${shiftDate} (${formatTime(shift.start_time)} - ${formatTime(shift.end_time)})`;
+        document.getElementById('start_date').value = shiftDate;
+        document.getElementById('end_date').value = shiftDate;
+        document.getElementById('shift_id').value = shiftId;
     }
+}
 
-    function requestForShift(userShiftId, shiftDate, shiftId) {
-        openRequestModal('swap');
-        document.getElementById('request_user_shift_id').value = userShiftId;
-        document.getElementById('request_shift_date').value = shiftDate;
-        
-        // Find shift info
-        const shifts = <?php echo json_encode($upcoming_shifts); ?>;
-        const shift = shifts.find(s => s.user_shift_id == userShiftId);
-        if (shift) {
-            document.getElementById('shiftInfo').style.display = 'flex';
-            document.getElementById('selectedShiftInfo').textContent = 
-                `${shift.shift_name} on ${shiftDate} (${formatTime(shift.start_time)} - ${formatTime(shift.end_time)})`;
-            document.getElementById('start_date').value = shiftDate;
-            document.getElementById('end_date').value = shiftDate;
-            document.getElementById('shift_id').value = shiftId;
-        }
+function updateRequestForm() {
+    const type = document.getElementById('request_type').value;
+    
+    // Hide all optional groups first
+    document.getElementById('shiftSelectionGroup').style.display = 'none';
+    document.getElementById('newShiftGroup').style.display = 'none';
+    document.getElementById('staffGroup').style.display = 'none';
+    
+    // Show relevant groups based on type
+    switch(type) {
+        case 'swap':
+            document.getElementById('newShiftGroup').style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Request Shift Swap';
+            break;
+        case 'cover':
+            document.getElementById('staffGroup').style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Request Shift Cover';
+            break;
+        case 'change':
+            document.getElementById('newShiftGroup').style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Request Shift Change';
+            break;
+        case 'timeoff':
+            document.getElementById('modalTitle').textContent = 'Request Time Off';
+            break;
     }
-
-    function updateRequestForm() {
-        const type = document.getElementById('request_type').value;
-        
-        // Hide all optional groups first
-        document.getElementById('shiftSelectionGroup').style.display = 'none';
-        document.getElementById('newShiftGroup').style.display = 'none';
-        document.getElementById('staffGroup').style.display = 'none';
-        
-        // Show relevant groups based on type
-        switch(type) {
-            case 'swap':
-                document.getElementById('newShiftGroup').style.display = 'block';
-                document.getElementById('modalTitle').textContent = 'Request Shift Swap';
-                break;
-            case 'cover':
-                document.getElementById('staffGroup').style.display = 'block';
-                document.getElementById('modalTitle').textContent = 'Request Shift Cover';
-                break;
-            case 'change':
-                document.getElementById('newShiftGroup').style.display = 'block';
-                document.getElementById('modalTitle').textContent = 'Request Shift Change';
-                break;
-            case 'timeoff':
-                document.getElementById('modalTitle').textContent = 'Request Time Off';
-                break;
-        }
-        
-        // Show shift selection for non-specific requests
-        if (!document.getElementById('request_user_shift_id').value) {
-            document.getElementById('shiftSelectionGroup').style.display = 'block';
-        }
+    
+    // Show shift selection for non-specific requests
+    if (!document.getElementById('request_user_shift_id').value) {
+        document.getElementById('shiftSelectionGroup').style.display = 'block';
     }
+}
 
-    function closeRequestModal() {
-        document.getElementById('requestModal').style.display = 'none';
-        // Reset form
-        document.getElementById('requestForm').reset();
-        document.getElementById('request_user_shift_id').value = '';
-        document.getElementById('shiftInfo').style.display = 'none';
-    }
+function closeRequestModal() {
+    document.getElementById('requestModal').style.display = 'none';
+    // Reset form
+    document.getElementById('requestForm').reset();
+    document.getElementById('request_user_shift_id').value = '';
+    document.getElementById('shiftInfo').style.display = 'none';
+}
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCurrentTime();
-        setInterval(updateCurrentTime, 1000);
-        
-        generateCalendar(currentMonth, currentYear);
-        
-        // Set default dates in modal
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('start_date').value = today;
-        
-        // Close modal handlers
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('requestModal').style.display = 'none';
-            });
-        });
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            const modal = document.getElementById('requestModal');
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-        
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.getElementById('requestModal').style.display = 'none';
-            }
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+    
+    generateCalendar(currentMonth, currentYear);
+    
+    // Set default dates in modal
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').value = today;
+    
+    // Close modal handlers
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('requestModal').style.display = 'none';
         });
     });
-    </script>
-</body>
-</html>
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        const modal = document.getElementById('requestModal');
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('requestModal').style.display = 'none';
+        }
+    });
+});
+</script>
 
-<?php ob_flush(); // Flush output buffer ?>
+<?php 
+ob_flush(); // Flush output buffer
+include ROOT_PATH . '/includes/footer.php'; 
+?>
