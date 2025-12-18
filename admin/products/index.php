@@ -847,6 +847,7 @@ $total_products = count($products);
                         <div class="product-price-section">
                             <div class="price-label">Total Value</div>
                             <div class="price-value">
+                                <P>Total Value</P>
                                 $<?php echo number_format($product['current_stock'] * $product['unit_price'], 2); ?>
                             </div>
                         </div>
