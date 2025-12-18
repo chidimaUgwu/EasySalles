@@ -152,7 +152,37 @@ $other_staff = $stmt->fetchAll();
         gap: 2rem;
         margin-bottom: 3rem;
     }
-    
+    .modal-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh; /* Limit maximum height */
+    margin: 2rem auto;
+    position: relative;
+    animation: slideDown 0.4s ease;
+    border: 1px solid var(--border);
+    overflow-y: auto; /* Make entire modal scrollable */
+}
+
+/* Scrollbar styling for the entire modal */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+}
     @media (max-width: 1024px) {
         .shifts-grid {
             grid-template-columns: 1fr;
