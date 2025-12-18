@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 ob_start(); // Start output buffering
 
 // Include configuration and authentication
-require 'config.php';
+require 'config.php'; // This should be in the same directory as my-shifts.php
 require 'includes/auth.php';
 
 // Check if user is logged in
@@ -19,6 +19,9 @@ if (isset($_SESSION['role']) && $_SESSION['role'] == 1) {
     header('Location: admin-dashboard.php');
     exit();
 }
+
+// Database connection - ADD THIS LINE
+require 'config/db.php'; // Make sure this path is correct
 
 $page_title = 'My Shifts';
 include 'includes/header.php';
@@ -82,7 +85,6 @@ $stmt = $pdo->prepare("SELECT user_id, full_name, username FROM EASYSALLES_USERS
 $stmt->execute([$user_id]);
 $other_staff = $stmt->fetchAll();
 ?>
-
 <style>
     /* My Shifts Dashboard */
     .my-shifts-dashboard {
