@@ -869,7 +869,7 @@ if (!isset($page_title)) {
                     <span>Analytics</span>
                 </a>
                 <a href="<?php echo getAdminURL('reports/staff.php'); ?>" class="menu-item <?php echo isActive('page', 'staff.php') ? 'active' : ''; ?>">
-                    <i class="fas fa-user-chart"></i>
+                    <i class="fas fa-users"></i>
                     <span>Staff Performance</span>
                 </a>
             </div>
