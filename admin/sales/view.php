@@ -61,17 +61,6 @@ $payment_info = $payment_methods[$sale['payment_method']] ??
         <a href="index.php" class="btn btn-outline">
             <i class="fas fa-arrow-left"></i> Back to Sales
         </a>
-        <a href="receipt.php?id=<?php echo $sale_id; ?>" 
-           target="_blank" 
-           class="btn btn-primary" 
-           style="margin-left: 0.5rem;">
-            <i class="fas fa-print"></i> Print Receipt
-        </a>
-        <a href="edit.php?id=<?php echo $sale_id; ?>" 
-           class="btn btn-secondary" 
-           style="margin-left: 0.5rem;">
-            <i class="fas fa-edit"></i> Edit Sale
-        </a>
     </div>
 </div>
 
@@ -397,40 +386,6 @@ $payment_info = $payment_methods[$sale['payment_method']] ??
             </div>
         </div>
         <?php endif; ?>
-        
-        <!-- Action Buttons -->
-        <div class="card" style="margin-top: 1.5rem;">
-            <div class="card-header">
-                <h3 class="card-title">Sale Actions</h3>
-            </div>
-            <div style="padding: 1.5rem;">
-                <div class="row">
-                    <div class="col-3">
-                        <a href="edit.php?id=<?php echo $sale_id; ?>" class="btn btn-primary" style="width: 100%;">
-                            <i class="fas fa-edit"></i> Edit Sale
-                        </a>
-                    </div>
-                    <div class="col-3">
-                        <a href="receipt.php?id=<?php echo $sale_id; ?>" 
-                           target="_blank" 
-                           class="btn btn-secondary" 
-                           style="width: 100%;">
-                            <i class="fas fa-print"></i> Print Receipt
-                        </a>
-                    </div>
-                    <div class="col-3">
-                        <button onclick="duplicateSale()" class="btn btn-outline" style="width: 100%;">
-                            <i class="fas fa-copy"></i> Duplicate
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button onclick="confirmRefund()" class="btn btn-outline" style="width: 100%; color: var(--error);">
-                            <i class="fas fa-undo"></i> Refund
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
