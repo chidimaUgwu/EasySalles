@@ -7,8 +7,9 @@ error_reporting(E_ALL);
 // my-shifts.php
 ob_start(); // Start output buffering
 
-require_once __DIR__ . '/config.php';
-require_once ROOT_PATH . '/includes/auth.php';
+require_once . 'config.php';
+require_once . '/includes/auth.php';
+
 require_login();
 
 // Redirect admin to admin dashboard
