@@ -1,5 +1,5 @@
 <?php
-// admin/shifts/manage.php
+// admin/shifts/index.php
 require_once __DIR__ . '/../../config.php';
 require_once ROOT_PATH . '/includes/auth.php';
 require_admin();
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$shift_name, $start_time, $end_time, $color]);
         
         $_SESSION['success'] = "Shift template added successfully!";
-        header("Location: manage.php");
+        header("Location: index.php");
         exit();
     }
     
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$shift_name, $start_time, $end_time, $color, $shift_id]);
         
         $_SESSION['success'] = "Shift template updated successfully!";
-        header("Location: manage.php");
+        header("Location: index.php");
         exit();
     }
     
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['success'] = "Shift template deleted successfully!";
         }
         
-        header("Location: manage.php");
+        header("Location: index.php");
         exit();
     }
 }
@@ -845,5 +845,6 @@ function calculateDuration() {
 startTimeInput.addEventListener('change', calculateDuration);
 endTimeInput.addEventListener('change', calculateDuration);
 </script>
+
 
 <?php require_once ROOT_PATH . 'admin/includes/footer.php'; ?>
